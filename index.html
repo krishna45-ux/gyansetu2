@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GyanSetu | The Bridge of Knowledge</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;700&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Iconify -->
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Inter"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                        heritage: ['"Cinzel"', 'serif'],
+                        future: ['"Orbitron"', 'sans-serif'],
+                    },
+                    colors: {
+                        'h-base': '#F2EADD', 
+                        'h-paper': '#FFFDF7',
+                        'h-ink': '#2B1B17',
+                        'h-gold': '#B8860B',
+                        'h-accent': '#8B4513',
+                        
+                        // Dark Mode V2: Midnight Zinc
+                        'f-base': '#09090b',        // Zinc 950 (Rich deep charcoal)
+                        'f-panel': '#18181b',       // Zinc 900 (Subtle card background)
+                        'f-text': '#fafafa',        // Zinc 50 (High contrast text)
+                        'f-neon': '#38bdf8',        // Sky 400 (Clean electric blue)
+                        'f-purple': '#818cf8',      // Indigo 400 (Soft complementary purple)
+                        'f-glass': 'rgba(24, 24, 27, 0.7)' // Zinc 900 with opacity
+                    },
+                    backgroundImage: {
+                        'grid-pattern': "radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.15) 0%, transparent 70%), linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px)",
+                        'paper-texture': "url('https://www.transparenttextures.com/patterns/cream-paper.png')"
+                    },
+                    backgroundSize: {
+                        'grid-pattern': '100% 100%, 40px 40px, 40px 40px'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { overflow-x: hidden; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        .dark ::-webkit-scrollbar-thumb { background: #38bdf8; }
+        
+        /* Enhanced Glass Panel for Dark Mode */
+        .glass-panel { 
+            background: rgba(24, 24, 27, 0.6); 
+            backdrop-filter: blur(20px); 
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .bg-grid-pattern {
+            background-size: 100% 100%, 40px 40px, 40px 40px;
+        }
+
+        .paper-panel { background: #FFFDF7; border: 1px solid #D4C5B0; box-shadow: 4px 4px 0px #8B4513; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade { animation: fadeIn 0.5s ease-out forwards; }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.38.0",
+    "firebase/": "https://esm.sh/firebase@^12.8.0/"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body class="transition-colors duration-500 bg-h-base dark:bg-f-base text-h-ink dark:text-f-text">
+    <div id="root"></div>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>
