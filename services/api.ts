@@ -47,6 +47,7 @@ const mockBackend = async (endpoint: string, method: string, body: any, isFormDa
         if (user && user.password === password) {
             return {
                 access_token: `mock-token-${user.email}`,
+                refresh_token: `mock-refresh-${user.email}`,
                 token_type: 'bearer'
             };
         }
@@ -204,9 +205,36 @@ export const apiRequest = async (endpoint: string, method: string = 'GET', body?
     try {
         const response = await fetch(`${API_URL}${endpoint}`, config);
 
-        if (response.status === 401) {
-            // Token expired or invalid
+        if (response.status === 401 && endpoint !== '/auth/refresh') {
+            // Try to silently refresh the access token using the stored refresh token
+            const refreshToken = localStorage.getItem('gyansetu_refresh_token');
+            if (refreshToken) {
+                try {
+                    console.log("Access token expired. Attempting silent refresh...");
+                    const refreshRes = await fetch(`${API_URL}/auth/refresh`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ refresh_token: refreshToken }),
+                    });
+                    if (refreshRes.ok) {
+                        const tokens = await refreshRes.json();
+                        localStorage.setItem('gyansetu_token', tokens.access_token);
+                        localStorage.setItem('gyansetu_refresh_token', tokens.refresh_token);
+                        // Retry the original request with the new access token
+                        config.headers = {
+                            ...config.headers,
+                            'Authorization': `Bearer ${tokens.access_token}`
+                        };
+                        const retryRes = await fetch(`${API_URL}${endpoint}`, config);
+                        return retryRes.json();
+                    }
+                } catch (refreshErr) {
+                    console.warn("Token refresh failed.", refreshErr);
+                }
+            }
+            // Refresh failed — clear session
             localStorage.removeItem('gyansetu_token');
+            localStorage.removeItem('gyansetu_refresh_token');
             console.warn("Session expired. Please login again.");
         }
 
@@ -215,7 +243,15 @@ export const apiRequest = async (endpoint: string, method: string = 'GET', body?
             throw new Error(errorData.detail || 'API Request Failed');
         }
 
-        return response.json();
+        // Persist tokens if this was a login or refresh response
+        const data = await response.json();
+        if (data.access_token) {
+            localStorage.setItem('gyansetu_token', data.access_token);
+        }
+        if (data.refresh_token) {
+            localStorage.setItem('gyansetu_refresh_token', data.refresh_token);
+        }
+        return data;
     } catch (error) {
         console.error(`API Call Error [${endpoint}]:`, error);
 

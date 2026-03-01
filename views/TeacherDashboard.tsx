@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { StatCard } from '../components/StatCard';
 import { ClassResource, Language, StudentPerformance, Quiz, QuizQuestion } from '../types';
 import { translations } from '../utils/translations';
-import { getAllStudents, postResource, getResources, deleteResource, postQuiz, getQuizzes } from '../services/dbService';
+import { getAllStudents, postResource, getResources, deleteResource, postQuiz, getQuizzes, uploadResourceFile } from '../services/dbService';
 
 interface TeacherDashboardProps {
     isDark: boolean;
     lang: Language;
-    userEmail: string; 
+    userEmail: string;
 }
 
 export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ isDark, lang, userEmail }) => {
@@ -16,7 +16,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ isDark, lang
     const [resources, setResources] = useState<ClassResource[]>([]);
     const [quizzes, setQuizzes] = useState<Quiz[]>([]);
     const [loading, setLoading] = useState(true);
-    
+
     // Resource Form State
     const [showForm, setShowForm] = useState(false);
     const [newRes, setNewRes] = useState({
@@ -24,8 +24,11 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ isDark, lang
         type: 'note' as 'assignment' | 'note' | 'remedial',
         subject: '',
         content: '',
-        dueDate: ''
+        dueDate: '',
+        attachment_url: '' as string,
     });
+    const [uploadingFile, setUploadingFile] = useState(false);
+    const [uploadedFileName, setUploadedFileName] = useState('');
 
     // Quiz Form State
     const [quizTitle, setQuizTitle] = useState("");
@@ -70,7 +73,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ isDark, lang
 
     const handlePostResource = async () => {
         if (!newRes.title || !newRes.content || !newRes.subject) return;
-        
+
         const resource: ClassResource = {
             id: Date.now(),
             title: newRes.title,
@@ -79,17 +82,33 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ isDark, lang
             content: newRes.content,
             date: new Date().toLocaleDateString(),
             dueDate: newRes.type === 'assignment' ? newRes.dueDate : undefined,
-            author: userEmail.split('@')[0] 
+            author: userEmail.split('@')[0]
         };
 
         // Optimistic UI Update
         setResources([resource, ...resources]);
-        
+
         // Save to Cloud
-        await postResource(resource);
-        
-        setNewRes({ title: '', type: 'note', subject: '', content: '', dueDate: '' });
+        await postResource({ ...resource, attachment_url: newRes.attachment_url || undefined });
+
+        setNewRes({ title: '', type: 'note', subject: '', content: '', dueDate: '', attachment_url: '' });
+        setUploadedFileName('');
         setShowForm(false);
+    };
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setUploadingFile(true);
+        try {
+            const result = await uploadResourceFile(file);
+            setNewRes(prev => ({ ...prev, attachment_url: result.url }));
+            setUploadedFileName(file.name);
+        } catch (err: any) {
+            alert('File upload failed: ' + (err.message || 'Unknown error'));
+        } finally {
+            setUploadingFile(false);
+        }
     };
 
     const handleAssignRemedial = async (studentName: string) => {
@@ -97,7 +116,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ isDark, lang
             id: Date.now(),
             title: `Remedial: ${selectedRemedialChapter}`,
             type: 'remedial',
-            subject: "Remedial Physics", 
+            subject: "Remedial Physics",
             content: `Based on your recent quiz performance, please watch the chapter: ${selectedRemedialChapter}.`,
             date: new Date().toLocaleDateString(),
             author: "Teacher (AI Recommendation)",
@@ -139,10 +158,10 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ isDark, lang
             dateCreated: new Date().toLocaleDateString(),
             active: true
         };
-        
+
         setQuizzes([newQuiz, ...quizzes]);
         await postQuiz(newQuiz);
-        
+
         setQuizTitle("");
         setQuizSubject("");
         setQuizQuestions([]);
@@ -165,11 +184,11 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ isDark, lang
                 </thead>
                 <tbody className="text-sm">
                     {data.length === 0 ? (
-                         <tr>
+                        <tr>
                             <td colSpan={6} className="p-8 text-center opacity-50">
                                 No students found. Waiting for students to register...
                             </td>
-                         </tr>
+                        </tr>
                     ) : (
                         data.map((student) => (
                             <tr key={student.id} className={`border-b last:border-0 transition-colors ${isDark ? 'border-gray-800 hover:bg-white/5' : 'border-gray-200 hover:bg-black/5'}`}>
@@ -186,8 +205,8 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ isDark, lang
                                 <td className="p-4 text-xs font-mono opacity-60">{student.currentModule}</td>
                                 <td className="p-4">
                                     <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold uppercase
-                                        ${student.status === 'Online' 
-                                            ? (isDark ? 'bg-green-500/20 text-green-400' : 'bg-green-100 text-green-700') 
+                                        ${student.status === 'Online'
+                                            ? (isDark ? 'bg-green-500/20 text-green-400' : 'bg-green-100 text-green-700')
                                             : 'opacity-50 bg-gray-500/10'}`}>
                                         <div className={`w-2 h-2 rounded-full ${student.status === 'Online' ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
                                         {student.status}
@@ -195,7 +214,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ isDark, lang
                                 </td>
                                 {showActions && (
                                     <td className="p-4 text-right">
-                                        <button 
+                                        <button
                                             onClick={() => setSelectedStudentForRemedial(student.name)}
                                             className={`px-3 py-1 rounded text-[10px] font-bold uppercase border hover:scale-105 transition-all
                                             ${isDark ? 'border-f-neon text-f-neon hover:bg-f-neon hover:text-black' : 'border-h-accent text-h-accent hover:bg-h-accent hover:text-white'}`}
@@ -257,7 +276,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ isDark, lang
                                     <div>
                                         <h3 className={`text-xl font-bold ${isDark ? 'font-future text-white' : 'font-heritage text-h-ink'}`}>{t.resourceManager}</h3>
                                     </div>
-                                    <button 
+                                    <button
                                         onClick={() => setShowForm(!showForm)}
                                         className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest border flex items-center gap-2 transition-all
                                         ${isDark ? 'bg-f-neon text-black border-f-neon hover:shadow-[0_0_15px_#00F0FF]' : 'bg-h-accent text-white border-h-accent hover:shadow-md'}`}
@@ -270,50 +289,67 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ isDark, lang
                                 {showForm && (
                                     <div className={`mb-8 p-6 rounded-xl animate-fade ${isDark ? 'bg-white/5 border border-white/10' : 'bg-black/5 border border-black/10'}`}>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                            <input 
-                                                type="text" 
+                                            <input
+                                                type="text"
                                                 placeholder={t.title}
                                                 value={newRes.title}
-                                                onChange={e => setNewRes({...newRes, title: e.target.value})}
+                                                onChange={e => setNewRes({ ...newRes, title: e.target.value })}
                                                 className={`w-full p-3 rounded-lg bg-transparent border outline-none ${isDark ? 'border-gray-700 focus:border-f-neon' : 'border-gray-300 focus:border-h-accent'}`}
                                             />
                                             <div className="flex gap-2">
-                                                <select 
+                                                <select
                                                     value={newRes.type}
-                                                    onChange={e => setNewRes({...newRes, type: e.target.value as any})}
+                                                    onChange={e => setNewRes({ ...newRes, type: e.target.value as any })}
                                                     className={`p-3 rounded-lg bg-transparent border outline-none ${isDark ? 'border-gray-700 focus:border-f-neon' : 'border-gray-300 focus:border-h-accent'} ${isDark ? 'text-white' : 'text-black'}`}
                                                 >
                                                     <option value="note" className="text-black">Note / Announcement</option>
                                                     <option value="assignment" className="text-black">Assignment</option>
                                                 </select>
-                                                <input 
-                                                    type="text" 
+                                                <input
+                                                    type="text"
                                                     placeholder={t.subject}
                                                     value={newRes.subject}
-                                                    onChange={e => setNewRes({...newRes, subject: e.target.value})}
+                                                    onChange={e => setNewRes({ ...newRes, subject: e.target.value })}
                                                     className={`flex-1 p-3 rounded-lg bg-transparent border outline-none ${isDark ? 'border-gray-700 focus:border-f-neon' : 'border-gray-300 focus:border-h-accent'}`}
                                                 />
                                             </div>
                                         </div>
-                                        <textarea 
+                                        <textarea
                                             placeholder={t.content}
                                             value={newRes.content}
-                                            onChange={e => setNewRes({...newRes, content: e.target.value})}
+                                            onChange={e => setNewRes({ ...newRes, content: e.target.value })}
                                             className={`w-full h-24 p-3 rounded-lg bg-transparent border outline-none mb-4 resize-none ${isDark ? 'border-gray-700 focus:border-f-neon' : 'border-gray-300 focus:border-h-accent'}`}
                                         ></textarea>
                                         {newRes.type === 'assignment' && (
                                             <div className="mb-4">
                                                 <label className="text-xs uppercase font-bold opacity-60 block mb-1">{t.dueDate}</label>
-                                                <input 
-                                                    type="date" 
+                                                <input
+                                                    type="date"
                                                     value={newRes.dueDate}
-                                                    onChange={e => setNewRes({...newRes, dueDate: e.target.value})}
+                                                    onChange={e => setNewRes({ ...newRes, dueDate: e.target.value })}
                                                     className={`p-3 rounded-lg bg-transparent border outline-none ${isDark ? 'border-gray-700 focus:border-f-neon' : 'border-gray-300 focus:border-h-accent'} ${isDark ? 'text-white' : 'text-black'}`}
                                                 />
                                             </div>
                                         )}
+                                        <div className="flex flex-col gap-3 mb-4">
+                                            {/* File Upload */}
+                                            <label className={`flex items-center gap-3 p-3 rounded-lg border-2 border-dashed cursor-pointer transition-colors
+                                                ${isDark ? 'border-gray-600 hover:border-f-neon text-gray-400 hover:text-f-neon' : 'border-gray-300 hover:border-h-accent text-gray-500 hover:text-h-accent'}`}>
+                                                <iconify-icon icon={uploadingFile ? 'solar:refresh-circle-bold' : 'solar:upload-bold'} className={`text-xl ${uploadingFile ? 'animate-spin' : ''}`} />
+                                                <span className="text-xs font-bold">
+                                                    {uploadingFile ? 'Uploading…' : uploadedFileName ? `✅ ${uploadedFileName}` : 'Attach a file (PDF, image, doc) — max 10MB'}
+                                                </span>
+                                                <input
+                                                    type="file"
+                                                    accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg,.gif"
+                                                    className="hidden"
+                                                    onChange={handleFileUpload}
+                                                    disabled={uploadingFile}
+                                                />
+                                            </label>
+                                        </div>
                                         <div className="flex justify-end">
-                                            <button 
+                                            <button
                                                 onClick={handlePostResource}
                                                 className={`px-6 py-2 rounded-lg font-bold uppercase text-xs tracking-widest ${isDark ? 'bg-f-purple text-white' : 'bg-h-gold text-white'}`}
                                             >
@@ -332,20 +368,19 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ isDark, lang
                                     )}
                                     {resources.map(res => (
                                         <div key={res.id} className={`p-4 rounded-xl border relative group ${isDark ? 'bg-white/5 border-gray-700' : 'bg-white border-gray-200'}`}>
-                                            <button 
+                                            <button
                                                 onClick={() => handleDeleteResource(res.id)}
                                                 className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-500"
                                             >
                                                 <iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon>
                                             </button>
                                             <div className="flex items-center gap-2 mb-2">
-                                                <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest ${
-                                                    res.type === 'assignment' 
-                                                        ? (isDark ? 'bg-red-500/20 text-red-400' : 'bg-red-100 text-red-600')
-                                                        : res.type === 'remedial'
-                                                            ? (isDark ? 'bg-orange-500/20 text-orange-400' : 'bg-orange-100 text-orange-600')
-                                                            : (isDark ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-600')
-                                                }`}>
+                                                <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest ${res.type === 'assignment'
+                                                    ? (isDark ? 'bg-red-500/20 text-red-400' : 'bg-red-100 text-red-600')
+                                                    : res.type === 'remedial'
+                                                        ? (isDark ? 'bg-orange-500/20 text-orange-400' : 'bg-orange-100 text-orange-600')
+                                                        : (isDark ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-600')
+                                                    }`}>
                                                     {res.type}
                                                 </span>
                                                 <span className="text-xs opacity-60 font-bold">{res.subject}</span>
@@ -353,6 +388,18 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ isDark, lang
                                             <h4 className={`font-bold mb-1 ${isDark ? 'text-white' : 'text-h-ink'}`}>{res.title}</h4>
                                             <p className="text-sm opacity-70 mb-3 line-clamp-2">{res.content}</p>
                                             {res.targetStudent && <p className="text-xs font-bold text-orange-500 mb-1">Assigned to: {res.targetStudent}</p>}
+                                            {/* Phase 2: Show attachment link if present */}
+                                            {(res as any).attachment_url && (
+                                                <a
+                                                    href={(res as any).attachment_url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className={`inline-flex items-center gap-1 text-xs font-bold mb-2 hover:underline ${isDark ? 'text-f-neon' : 'text-h-accent'}`}
+                                                >
+                                                    <iconify-icon icon="solar:paperclip-bold" />
+                                                    View Attachment
+                                                </a>
+                                            )}
                                             <div className="flex justify-between items-center text-[10px] opacity-50 font-mono">
                                                 <span>Posted: {res.date}</span>
                                                 {res.dueDate && <span className="text-red-400 font-bold">Due: {res.dueDate}</span>}
@@ -392,9 +439,9 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ isDark, lang
                                     <div className={`w-full max-w-md p-6 rounded-2xl ${isDark ? 'bg-gray-900 border border-f-neon' : 'bg-white border border-h-accent'}`}>
                                         <h3 className={`text-lg font-bold mb-4 ${isDark ? 'text-white' : 'text-h-ink'}`}>{t.assignRemedial}</h3>
                                         <p className="mb-4 text-sm opacity-80">{t.assignTo}: <strong>{selectedStudentForRemedial}</strong></p>
-                                        
+
                                         <label className="block text-xs font-bold uppercase tracking-widest opacity-60 mb-2">{t.selectVideo}</label>
-                                        <select 
+                                        <select
                                             className={`w-full p-3 rounded-lg mb-6 bg-transparent border outline-none ${isDark ? 'border-gray-700' : 'border-gray-300'}`}
                                             value={selectedRemedialChapter}
                                             onChange={(e) => setSelectedRemedialChapter(e.target.value)}
@@ -407,7 +454,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ isDark, lang
 
                                         <div className="flex justify-end gap-3">
                                             <button onClick={() => setSelectedStudentForRemedial(null)} className="px-4 py-2 text-xs font-bold uppercase opacity-60 hover:opacity-100">{t.cancel}</button>
-                                            <button 
+                                            <button
                                                 onClick={() => handleAssignRemedial(selectedStudentForRemedial)}
                                                 className={`px-6 py-2 rounded-lg font-bold uppercase text-xs tracking-widest ${isDark ? 'bg-f-neon text-black' : 'bg-h-accent text-white'}`}
                                             >
@@ -424,22 +471,22 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ isDark, lang
                     {viewMode === 'create_quiz' && (
                         <div className={`p-8 rounded-2xl ${isDark ? 'glass-panel' : 'paper-panel'}`}>
                             <h2 className={`text-2xl font-bold mb-6 ${isDark ? 'text-white' : 'text-h-ink'}`}>{t.createQuiz}</h2>
-                            
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                                 <div>
                                     <label className="block text-xs font-bold uppercase tracking-widest opacity-60 mb-2">{t.quizTitle}</label>
-                                    <input 
-                                        type="text" 
-                                        value={quizTitle} 
+                                    <input
+                                        type="text"
+                                        value={quizTitle}
                                         onChange={(e) => setQuizTitle(e.target.value)}
                                         className={`w-full p-3 rounded-lg bg-transparent border outline-none ${isDark ? 'border-gray-700 focus:border-f-neon' : 'border-gray-300 focus:border-h-accent'}`}
                                     />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold uppercase tracking-widest opacity-60 mb-2">{t.subject}</label>
-                                    <input 
-                                        type="text" 
-                                        value={quizSubject} 
+                                    <input
+                                        type="text"
+                                        value={quizSubject}
                                         onChange={(e) => setQuizSubject(e.target.value)}
                                         className={`w-full p-3 rounded-lg bg-transparent border outline-none ${isDark ? 'border-gray-700 focus:border-f-neon' : 'border-gray-300 focus:border-h-accent'}`}
                                     />
@@ -448,34 +495,34 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ isDark, lang
 
                             <div className={`p-6 rounded-xl mb-6 ${isDark ? 'bg-white/5' : 'bg-black/5'}`}>
                                 <h4 className="font-bold mb-4">{t.addQuestion}</h4>
-                                <input 
-                                    type="text" 
-                                    placeholder="Question Text" 
+                                <input
+                                    type="text"
+                                    placeholder="Question Text"
                                     className={`w-full p-3 rounded-lg bg-transparent border outline-none mb-3 ${isDark ? 'border-gray-700' : 'border-gray-300'}`}
                                     value={currentQuestion.q}
-                                    onChange={(e) => setCurrentQuestion({...currentQuestion, q: e.target.value})}
+                                    onChange={(e) => setCurrentQuestion({ ...currentQuestion, q: e.target.value })}
                                 />
                                 <div className="grid grid-cols-2 gap-3 mb-3">
                                     {[1, 2, 3, 4].map((num, idx) => (
-                                        <input 
+                                        <input
                                             key={idx}
-                                            type="text" 
-                                            placeholder={`${t.option} ${num}`} 
+                                            type="text"
+                                            placeholder={`${t.option} ${num}`}
                                             className={`w-full p-3 rounded-lg bg-transparent border outline-none ${isDark ? 'border-gray-700' : 'border-gray-300'}`}
                                             value={(currentQuestion as any)[`o${num}`]}
-                                            onChange={(e) => setCurrentQuestion({...currentQuestion, [`o${num}`]: e.target.value})}
+                                            onChange={(e) => setCurrentQuestion({ ...currentQuestion, [`o${num}`]: e.target.value })}
                                         />
                                     ))}
                                 </div>
-                                <input 
-                                    type="number" 
+                                <input
+                                    type="number"
                                     min="0" max="3"
                                     placeholder={t.correctOption}
                                     className={`w-full p-3 rounded-lg bg-transparent border outline-none mb-4 ${isDark ? 'border-gray-700' : 'border-gray-300'}`}
                                     value={currentQuestion.correct}
-                                    onChange={(e) => setCurrentQuestion({...currentQuestion, correct: parseInt(e.target.value)})}
+                                    onChange={(e) => setCurrentQuestion({ ...currentQuestion, correct: parseInt(e.target.value) })}
                                 />
-                                <button 
+                                <button
                                     onClick={addQuestionToQuiz}
                                     className={`w-full py-2 rounded-lg font-bold uppercase text-xs border ${isDark ? 'border-white text-white hover:bg-white hover:text-black' : 'border-black text-black hover:bg-black hover:text-white'}`}
                                 >
@@ -489,7 +536,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ isDark, lang
                                     <div className="space-y-2">
                                         {quizQuestions.map((q, i) => (
                                             <div key={q.id} className={`p-3 rounded-lg text-sm flex justify-between ${isDark ? 'bg-white/5' : 'bg-white border'}`}>
-                                                <span>{i+1}. {q.question}</span>
+                                                <span>{i + 1}. {q.question}</span>
                                                 <span className="opacity-50">Ans: {q.options[q.correctIndex]}</span>
                                             </div>
                                         ))}
@@ -497,7 +544,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ isDark, lang
                                 </div>
                             )}
 
-                            <button 
+                            <button
                                 onClick={publishQuiz}
                                 className={`w-full py-4 rounded-xl font-bold uppercase tracking-widest transition-all
                                 ${isDark ? 'bg-f-purple text-white hover:shadow-[0_0_20px_rgba(189,0,255,0.4)]' : 'bg-h-gold text-white hover:shadow-lg'}`}
@@ -507,7 +554,8 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ isDark, lang
                         </div>
                     )}
                 </>
-            )}
-        </div>
+            )
+            }
+        </div >
     );
 };

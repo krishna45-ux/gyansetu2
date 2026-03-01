@@ -6,3 +6,8 @@ python-jose[cryptography]
 passlib[bcrypt]
 python-multipart
 psycopg2-binary
+slowapi
+alembic
+cloudinary
+firebase-admin
+python-dotenv
