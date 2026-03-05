@@ -22,3 +22,21 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment files — API keys, secrets (NEVER commit!)
+.env
+.env.local
+.env.production
+.env.development
+backend/.env
+
+# Firebase service account
+backend/serviceAccountKey.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+*.egg-info/
