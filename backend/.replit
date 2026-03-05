@@ -1,9 +1,8 @@
-run = "bash -c 'cd backend && uvicorn main:app --host 0.0.0.0 --port 80'"
+run = "bash start.sh"
 entrypoint = "backend/main.py"
 
 [nix]
 channel = "stable-24_05"
 
 [deployment]
-build = ["bash", "-c", "cd backend && pip install -r requirements.txt"]
-run = ["bash", "-c", "cd backend && uvicorn main:app --host 0.0.0.0 --port 80"]
+run = ["bash", "start.sh"]
