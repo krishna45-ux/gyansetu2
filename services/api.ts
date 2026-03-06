@@ -252,11 +252,14 @@ export const apiRequest = async (endpoint: string, method: string = 'GET', body?
             localStorage.setItem('gyansetu_refresh_token', data.refresh_token);
         }
         return data;
-    } catch (error) {
-        console.error(`API Call Error [${endpoint}]:`, error);
-
-        // Auto-fallback to mock if server is unreachable to prevent app crash
-        console.warn("Server unreachable. Switching to Mock Backend for this request.");
-        return await mockBackend(endpoint, method, body, isFormData);
+    } catch (error: any) {
+        // Only fallback to mock if it's a true network failure (server unreachable)
+        // Do NOT fallback for HTTP errors (4xx/5xx) — those are real meaningful errors
+        if (error instanceof TypeError || error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
+            console.warn("Server unreachable. Switching to Mock Backend for this request.");
+            return await mockBackend(endpoint, method, body, isFormData);
+        }
+        // Re-throw real HTTP errors so the UI shows the actual error message
+        throw error;
     }
 };
