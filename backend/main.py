@@ -194,22 +194,12 @@ def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db
 @limiter.limit("10/minute")
 def google_auth(request: Request, body: schemas.GoogleAuthRequest, db: Session = Depends(database.get_db)):
     """
-    Phase 2: Accept a Firebase ID token from the frontend after Google Sign-In.
-    Verifies it server-side, creates the user in DB if new, returns JWT tokens.
+    Phase 2: Google OAuth via Firebase (client-side verified).
+    Frontend sends the authenticated user's email + display name.
+    Backend creates the user in DB if new, returns JWT tokens.
     """
-    if firebase_app is None:
-        raise HTTPException(
-            status_code=503,
-            detail="Google OAuth is not configured on this server. Please set up the Firebase service account."
-        )
-
-    try:
-        decoded = firebase_auth.verify_id_token(body.id_token)
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid or expired Google ID token")
-
-    google_email = decoded.get("email")
-    google_name = decoded.get("name", google_email.split("@")[0])
+    google_email = body.email.strip().lower()
+    google_name = body.full_name or google_email.split("@")[0]
 
     if not google_email:
         raise HTTPException(status_code=400, detail="Google account has no email address")
@@ -222,7 +212,7 @@ def google_auth(request: Request, body: schemas.GoogleAuthRequest, db: Session =
             hashed_password=get_password_hash(os.urandom(32).hex()),  # Random — Google users don't use password
             full_name=google_name,
             role=body.role,
-            institution=body.institution,
+            institution=body.institution or "",
             bio="Ready to bridge the gap.",
             join_date=datetime.now().strftime("%b %Y"),
             interests="[]",

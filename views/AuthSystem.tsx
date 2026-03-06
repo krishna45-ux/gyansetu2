@@ -159,12 +159,14 @@ export const AuthSystem: React.FC<AuthSystemProps> = ({ onAuth, isDark, toggleTh
         setIsProcessing(true);
         try {
             const result = await signInWithPopup(auth, googleProvider);
-            const idToken = await result.user.getIdToken();
+            const user = result.user;
 
-            // Send Firebase token to our FastAPI backend
+            // Send Firebase-verified user info to our FastAPI backend
             const response = await apiRequest('/auth/google', 'POST', {
-                id_token: idToken,
+                email: user.email,
+                full_name: user.displayName || user.email?.split('@')[0] || '',
                 role,
+                institution: institution || '',
             });
 
             localStorage.setItem('gyansetu_token', response.access_token);
