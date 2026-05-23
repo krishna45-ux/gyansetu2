@@ -1,13 +1,9 @@
 import React from 'react';
-import { Language } from '../types';
+import { useAppContext } from '../contexts/AppContext';
 
-interface LanguageToggleProps {
-    language: Language;
-    setLanguage: (lang: Language) => void;
-    isDark: boolean;
-}
-
-export const LanguageToggle: React.FC<LanguageToggleProps> = ({ language, setLanguage, isDark }) => (
+export const LanguageToggle: React.FC = () => {
+    const { language, setLanguage, isDark } = useAppContext();
+    return (
     <div className={`flex rounded-lg border p-1 ${isDark ? 'border-f-neon/50 bg-black/20' : 'border-h-accent/30 bg-white/50'}`}>
         <button 
             onClick={() => setLanguage('en')} 
@@ -28,4 +24,5 @@ export const LanguageToggle: React.FC<LanguageToggleProps> = ({ language, setLan
             HI
         </button>
     </div>
-);
+    );
+};

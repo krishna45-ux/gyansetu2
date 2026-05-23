@@ -30,7 +30,7 @@ declare module 'react' {
 export type Role = 'student' | 'teacher';
 export type Language = 'en' | 'hi';
 
-export type ViewState = 'landing' | 'auth' | 'student_dashboard' | 'teacher_dashboard' | 'settings' | 'career_path' | 'daily_growth' | 'curriculum';
+export type ViewState = 'landing' | 'auth' | 'student_dashboard' | 'teacher_dashboard' | 'settings' | 'career_path' | 'daily_growth' | 'curriculum' | 'community';
 
 export interface ThemeProps {
     isDark: boolean;

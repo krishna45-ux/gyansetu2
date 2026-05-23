@@ -4,6 +4,12 @@
 import { apiRequest } from "./api";
 import { UserProfile, ClassResource, StudentPerformance, Quiz, QuizQuestion } from "../types";
 
+const API_URL = import.meta.env.VITE_API_URL || (
+    typeof window !== 'undefined' && !window.location.hostname.includes('localhost')
+        ? "https://gyansetu-2--amitkasganj4.replit.app"
+        : "http://localhost:8000"
+);
+
 // --- USER FUNCTIONS ---
 
 export const getUserProfile = async (): Promise<UserProfile | null> => {
@@ -16,18 +22,17 @@ export const getUserProfile = async (): Promise<UserProfile | null> => {
     }
 };
 
-export const updateUserProfile = async (uid: string, data: Partial<UserProfile>) => {
-    // uid is ignored; backend uses the JWT token to identify the user
+export const updateUserProfile = async (data: Partial<UserProfile>) => {
     await apiRequest('/users/profile', 'PUT', data);
 };
 
 // --- PROGRESS & DASHBOARD FUNCTIONS ---
 
-export const saveLastWatched = async (uid: string, data: { subject: string; chapter: string }) => {
+export const saveLastWatched = async (data: { subject: string; chapter: string; classLevel?: number }) => {
     await apiRequest('/progress/update-last-watched', 'POST', data);
 };
 
-export const getLastWatched = async (uid: string) => {
+export const getLastWatched = async () => {
     try {
         const response = await apiRequest('/progress', 'GET');
         return response.last_watched || null;
@@ -36,11 +41,11 @@ export const getLastWatched = async (uid: string) => {
     }
 };
 
-export const saveCareerGoal = async (uid: string, goal: string) => {
+export const saveCareerGoal = async (goal: string) => {
     await apiRequest('/users/career-goal', 'PUT', { career_goal: goal });
 };
 
-export const getCareerGoal = async (uid: string) => {
+export const getCareerGoal = async () => {
     try {
         const profile = await getUserProfile();
         return profile?.career_goal || null;
@@ -65,7 +70,7 @@ export const markChapterCompleteDB = async (chapterTitle: string) => {
     if (profile) {
         const currentChapters = profile.completed_chapters || [];
         if (!currentChapters.includes(chapterTitle)) {
-            await updateUserProfile("", {
+            await updateUserProfile({
                 completed_chapters: [...currentChapters, chapterTitle]
             });
         }
@@ -102,7 +107,7 @@ export const uploadResourceFile = async (file: File): Promise<{ url: string; fil
 
     const token = localStorage.getItem('gyansetu_token');
     const response = await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/resources/upload`,
+        `${API_URL}/resources/upload`,
         {
             method: 'POST',
             headers: token ? { Authorization: `Bearer ${token}` } : {},

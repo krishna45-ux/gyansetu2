@@ -111,6 +111,7 @@ class QuizSubmissionResponse(BaseModel):
 class LastWatchedUpdate(BaseModel):
     subject: str = Field(..., min_length=1, max_length=100)
     chapter: str = Field(..., min_length=1, max_length=200)
+    classLevel: Optional[int] = Field(None, ge=1, le=12)
 
 # --- Search Schemas ---
 class SearchResult(BaseModel):

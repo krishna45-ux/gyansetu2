@@ -3,11 +3,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { Language } from '../types';
 import { translations } from '../utils/translations';
 import { DAILY_WORD } from '../utils/curriculumData';
-
-interface DailyGrowthViewProps {
-    isDark: boolean;
-    lang: Language;
-}
+import { useAppContext } from '../contexts/AppContext';
 
 interface ChatMessage {
     id: number;
@@ -39,7 +35,8 @@ const SCENARIOS = [
 
 const BAD_WORDS = ['stupid', 'idiot', 'dumb', 'hate', 'useless', 'shut up', 'crazy', 'mad', 'kill', 'die'];
 
-export const DailyGrowthView: React.FC<DailyGrowthViewProps> = ({ isDark, lang }) => {
+export const DailyGrowthView: React.FC = () => {
+    const { isDark, language: lang } = useAppContext();
     // --- WORD OF THE DAY STATE ---
     const word = DAILY_WORD;
 

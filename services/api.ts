@@ -8,7 +8,11 @@ const USE_MOCK_BACKEND = false;
 // --- CONFIGURATION FOR DEPLOYMENT ---
 // Set VITE_API_URL in Vercel Dashboard → Environment Variables
 // For local dev: set VITE_API_URL=http://localhost:8000 in .env.local
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API_URL = import.meta.env.VITE_API_URL || (
+    typeof window !== 'undefined' && !window.location.hostname.includes('localhost')
+        ? "https://gyansetu-2--amitkasganj4.replit.app"
+        : "http://localhost:8000"
+);
 
 
 // --- MOCK BACKEND IMPLEMENTATION (Simulation) ---
@@ -44,7 +48,8 @@ const mockBackend = async (endpoint: string, method: string, body: any, isFormDa
 
         const user = findUser(username);
 
-        if (user && user.password === password) {
+        // Mock auth only — production uses bcrypt via FastAPI
+        if (user && user.password === btoa(password)) {
             return {
                 access_token: `mock-token-${user.email}`,
                 refresh_token: `mock-refresh-${user.email}`,
@@ -61,6 +66,7 @@ const mockBackend = async (endpoint: string, method: string, body: any, isFormDa
         }
         const newUser = {
             ...body,
+            password: btoa(body.password), // Mock auth only — production uses bcrypt via FastAPI
             bio: "Ready to bridge the gap between wisdom and technology.",
             interests: [],
             joinDate: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
@@ -148,22 +154,54 @@ const mockBackend = async (endpoint: string, method: string, body: any, isFormDa
         return { message: "Progress saved" };
     }
 
-    // 8. TEACHER STUDENTS
+    // 8. QUIZZES
+    if (endpoint === '/quizzes') {
+        if (method === 'GET') {
+            return JSON.parse(localStorage.getItem('gyansetu_db_quizzes') || '[]');
+        }
+        if (method === 'POST') {
+            const quizzes = JSON.parse(localStorage.getItem('gyansetu_db_quizzes') || '[]');
+            const newQuiz = {
+                ...body,
+                id: Date.now(),
+                dateCreated: new Date().toLocaleDateString(),
+                active: true
+            };
+            quizzes.unshift(newQuiz);
+            localStorage.setItem('gyansetu_db_quizzes', JSON.stringify(quizzes));
+            return { message: "Quiz created" };
+        }
+    }
+
+    if (endpoint.match(/^\/quizzes\/\d+\/submit$/) && method === 'POST') {
+        // Just mock success for submission
+        return { message: "Score submitted" };
+    }
+
+    // 9. TEACHER STUDENTS
     if (endpoint === '/teacher/students') {
         const allUsers = getDBUsers();
         // Convert stored users to StudentPerformance format
         return allUsers
             .filter((u: any) => u.role === 'student')
-            .map((u: any) => ({
-                id: u.email,
-                name: u.full_name,
-                careerGoal: u.career_goal || "Undecided",
-                currentModule: u.last_watched ? `${u.last_watched.subject}: ${u.last_watched.chapter}` : "Not Started",
-                averageScore: Math.floor(Math.random() * 40) + 60, // Mock score
-                quizzesTaken: Math.floor(Math.random() * 10),
-                lastTwoScores: [75, 80],
-                status: "Online"
-            }));
+            .map((u: any) => {
+                const scoreKey = `gyansetu_mock_score_${u.email}`;
+                let score = localStorage.getItem(scoreKey);
+                if (!score) {
+                    score = String(Math.floor(Math.random() * 40) + 60);
+                    localStorage.setItem(scoreKey, score);
+                }
+                return {
+                    id: u.email,
+                    name: u.full_name,
+                    careerGoal: u.career_goal || "Undecided",
+                    currentModule: u.last_watched ? `${u.last_watched.subject}: ${u.last_watched.chapter}` : "Not Started",
+                    averageScore: parseInt(score), // Persisted mock score
+                    quizzesTaken: Math.floor(Math.random() * 10),
+                    lastTwoScores: [75, 80],
+                    status: "Online"
+                };
+            });
     }
 
     throw new Error("404 Not Found");

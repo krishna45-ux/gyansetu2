@@ -1,21 +1,21 @@
 
 import React, { useState } from 'react';
-import { ThemeProps, Role, Language } from '../types';
+import { Role, Language } from '../types';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { LanguageToggle } from '../components/LanguageToggle';
 import { translations } from '../utils/translations';
 import { apiRequest } from '../services/api';
 import { auth, googleProvider, FIREBASE_CONFIGURED } from '../firebase';
 import { signInWithPopup } from 'firebase/auth';
+import { useAppContext } from '../contexts/AppContext';
 
-interface AuthSystemProps extends ThemeProps {
+interface AuthSystemProps {
     onAuth: (role: Role, email: string) => void;
     onBack: () => void;
-    language: Language;
-    setLanguage: (lang: Language) => void;
 }
 
-export const AuthSystem: React.FC<AuthSystemProps> = ({ onAuth, isDark, toggleTheme, onBack, language, setLanguage }) => {
+export const AuthSystem: React.FC<AuthSystemProps> = ({ onAuth, onBack }) => {
+    const { isDark, language } = useAppContext();
     const [role, setRole] = useState<Role>('student');
     const [isLogin, setIsLogin] = useState(true);
 
@@ -155,8 +155,8 @@ export const AuthSystem: React.FC<AuthSystemProps> = ({ onAuth, isDark, toggleTh
                 </button>
             </div>
             <div className="absolute top-8 right-8 flex items-center gap-4">
-                <LanguageToggle language={language} setLanguage={setLanguage} isDark={isDark} />
-                <ThemeToggle isDark={isDark} toggleTheme={toggleTheme} language={language} />
+                <LanguageToggle />
+                <ThemeToggle />
             </div>
 
             <div className={`w-full max-w-md p-8 md:p-10 rounded-3xl animate-fade relative overflow-hidden transition-all duration-500 ${isDark ? 'glass-panel shadow-[0_0_40px_rgba(0,0,0,0.5)]' : 'paper-panel shadow-2xl'}`}>
@@ -280,8 +280,9 @@ export const AuthSystem: React.FC<AuthSystemProps> = ({ onAuth, isDark, toggleTh
                     </div>
                     <button
                         onClick={handleGoogleSignIn}
-                        disabled={isProcessing}
-                        className={`w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-3 border transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-wait
+                        disabled={!FIREBASE_CONFIGURED || isProcessing}
+                        title={!FIREBASE_CONFIGURED ? "Google Sign-In is not configured" : ""}
+                        className={`w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-3 border transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed
                             ${isDark
                                 ? 'bg-white/5 border-gray-700 text-white hover:bg-white/10 hover:border-gray-600'
                                 : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm hover:shadow-md'

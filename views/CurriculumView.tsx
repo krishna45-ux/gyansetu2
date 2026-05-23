@@ -4,12 +4,7 @@ import { translations } from '../utils/translations';
 import { SYLLABUS_DATA, SUBJECT_ICONS, CHAPTER_VIDEO_MAP } from '../utils/curriculumData';
 import { GoogleGenAI, Type } from "@google/genai";
 import { saveLastWatched, getLastWatched, getCompletedChapters, markChapterCompleteDB } from '../services/dbService';
-
-interface CurriculumViewProps {
-    isDark: boolean;
-    lang: Language;
-    userEmail: string; // Add User Email Prop
-}
+import { useAppContext } from '../contexts/AppContext';
 
 interface AiQuizQuestion {
     question: string;
@@ -74,7 +69,8 @@ In conclusion, ${title} serves as a pivotal point in the curriculum, bridging th
     return { videos, notes: mockNotes };
 };
 
-export const CurriculumView: React.FC<CurriculumViewProps> = ({ isDark, lang, userEmail }) => {
+export const CurriculumView: React.FC = () => {
+    const { isDark, language: lang, userEmail } = useAppContext();
     const [selectedClass, setSelectedClass] = useState<number | null>(null);
     const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
     const [selectedChapter, setSelectedChapter] = useState<string | null>(null);
@@ -106,7 +102,7 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({ isDark, lang, us
             
             if (resumeFlag === 'true') {
                 // If resuming, trust the cloud 'last_watched' data
-                const lastWatched = await getLastWatched("");
+                const lastWatched = await getLastWatched();
                 if (lastWatched) {
                     setSelectedClass(lastWatched.classLevel);
                     setSelectedSubject(lastWatched.subject);
@@ -129,7 +125,7 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({ isDark, lang, us
             };
             
             // Save to Cloud
-            saveLastWatched("", history);
+            saveLastWatched(history);
             
             // Reset video to first option
             const content = getChapterContent(selectedChapter, selectedSubject);

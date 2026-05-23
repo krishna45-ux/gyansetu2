@@ -4,13 +4,7 @@ import { Language, ViewState } from '../types';
 import { translations } from '../utils/translations';
 import { SYLLABUS_DATA } from '../utils/curriculumData';
 import { saveCareerGoal, getCareerGoal, saveLastWatched, getCompletedChapters } from '../services/dbService';
-
-interface CareerPathViewProps {
-    isDark: boolean;
-    lang: Language;
-    onNavigate: (view: ViewState) => void;
-    userEmail: string; // Add User Email Prop
-}
+import { useAppContext } from '../contexts/AppContext';
 
 // Map career options to subjects/keywords in the syllabus
 const CAREER_OPTIONS = [
@@ -56,7 +50,8 @@ const CAREER_OPTIONS = [
     }
 ];
 
-export const CareerPathView: React.FC<CareerPathViewProps> = ({ isDark, lang, onNavigate, userEmail }) => {
+export const CareerPathView: React.FC = () => {
+    const { isDark, language: lang, setView: onNavigate, userEmail } = useAppContext();
     const [careerGoal, setCareerGoal] = useState<string | null>(null);
     const [completedChapters, setCompletedChapters] = useState<string[]>([]);
     const t = translations[lang];
@@ -64,7 +59,7 @@ export const CareerPathView: React.FC<CareerPathViewProps> = ({ isDark, lang, on
     useEffect(() => {
         // Load USER SPECIFIC Data from Cloud
         const loadData = async () => {
-            const goal = await getCareerGoal("");
+            const goal = await getCareerGoal();
             setCareerGoal(goal);
 
             const completed = await getCompletedChapters();
@@ -75,12 +70,12 @@ export const CareerPathView: React.FC<CareerPathViewProps> = ({ isDark, lang, on
 
     const handleGoalSelect = async (id: string) => {
         setCareerGoal(id);
-        await saveCareerGoal("", id);
+        await saveCareerGoal(id);
     };
 
     const handleReset = async () => {
         setCareerGoal(null);
-        await saveCareerGoal("", ""); // Clear goal
+        await saveCareerGoal(""); // Clear goal
     };
 
     // Helper to generate path nodes based on syllabus
@@ -129,7 +124,7 @@ export const CareerPathView: React.FC<CareerPathViewProps> = ({ isDark, lang, on
             chapter: node.chapter,
             progress: 0
         };
-        saveLastWatched("", history);
+        saveLastWatched(history);
 
         onNavigate('curriculum');
     };

@@ -2,17 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Role, UserProfile, Language } from '../types';
 import { translations } from '../utils/translations';
 import { getUserProfile, updateUserProfile } from '../services/dbService';
-
-interface SettingsViewProps {
-    isDark: boolean;
-    role: Role | null;
-    lang: Language;
-    userEmail: string; // Add User Email Prop
-}
+import { useAppContext } from '../contexts/AppContext';
 
 const SUGGESTED_INTERESTS = ['Physics', 'Mathematics', 'Computer Science', 'History', 'Literature', 'Robotics', 'AI', 'Art', 'Debate', 'Space'];
 
-export const SettingsView: React.FC<SettingsViewProps> = ({ isDark, role, lang, userEmail }) => {
+export const SettingsView: React.FC = () => {
+    const { isDark, userRole: role, language: lang, userEmail } = useAppContext();
     const [profile, setProfile] = useState<UserProfile>({
         name: '',
         role: role || 'student',
@@ -52,7 +47,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isDark, role, lang, 
         const updatedProfile = { ...profile, interests: interestsArray };
         setProfile(updatedProfile);
         
-        await updateUserProfile("", updatedProfile);
+        await updateUserProfile(updatedProfile);
         setIsSaved(true);
         setTimeout(() => setIsSaved(false), 2000);
     };

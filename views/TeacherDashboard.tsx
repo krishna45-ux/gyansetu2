@@ -3,14 +3,10 @@ import { StatCard } from '../components/StatCard';
 import { ClassResource, Language, StudentPerformance, Quiz, QuizQuestion } from '../types';
 import { translations } from '../utils/translations';
 import { getAllStudents, postResource, getResources, deleteResource, postQuiz, getQuizzes, uploadResourceFile } from '../services/dbService';
+import { useAppContext } from '../contexts/AppContext';
 
-interface TeacherDashboardProps {
-    isDark: boolean;
-    lang: Language;
-    userEmail: string;
-}
-
-export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ isDark, lang, userEmail }) => {
+export const TeacherDashboard: React.FC = () => {
+    const { isDark, language: lang, userEmail } = useAppContext();
     const [viewMode, setViewMode] = useState<'dashboard' | 'all_students' | 'at_risk' | 'create_quiz'>('dashboard');
     const [students, setStudents] = useState<StudentPerformance[]>([]);
     const [resources, setResources] = useState<ClassResource[]>([]);

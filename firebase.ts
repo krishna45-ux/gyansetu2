@@ -7,10 +7,10 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 
 const firebaseConfig = {
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "",
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "",
-    appId: import.meta.env.VITE_FIREBASE_APP_ID || "",
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyBbNkMjPCgKNyzNKoRGUd5sO5_bVdgZ19s",
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "gyansetu-cd964.firebaseapp.com",
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "gyansetu-cd964",
+    appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:801865642200:web:ab07450e6ddb53ede0e7ad",
 };
 
 // Only initialize if config is available

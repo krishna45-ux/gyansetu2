@@ -1,12 +1,9 @@
 import React from 'react';
-import { ThemeProps, Language } from '../types';
+import { useAppContext } from '../contexts/AppContext';
 import { translations } from '../utils/translations';
 
-interface ThemeToggleProps extends ThemeProps {
-    language?: Language;
-}
-
-export const ThemeToggle: React.FC<ThemeToggleProps> = ({ isDark, toggleTheme, language = 'en' }) => {
+export const ThemeToggle: React.FC = () => {
+    const { isDark, toggleTheme, language } = useAppContext();
     const t = translations[language];
     return (
         <button 

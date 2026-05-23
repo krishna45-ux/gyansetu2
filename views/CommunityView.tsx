@@ -21,10 +21,8 @@ interface Question {
     time: string;
 }
 
-interface CommunityViewProps {
-    isDark: boolean;
-    userRole: Role | null;
-}
+import { useAppContext } from '../contexts/AppContext';
+import { translations } from '../utils/translations';
 
 // Mock Database for other users
 const MOCK_PROFILES: Record<string, UserProfile> = {
@@ -81,7 +79,9 @@ const INITIAL_QUESTIONS: Question[] = [
 const STORAGE_KEY = 'gyansetu_community_data';
 const PROFILE_KEY = 'gyansetu_profile';
 
-export const CommunityView: React.FC<CommunityViewProps> = ({ isDark, userRole }) => {
+export const CommunityView: React.FC = () => {
+    const { isDark, userRole, language } = useAppContext();
+    const t = translations[language];
     // Initialize state from localStorage
     const [questions, setQuestions] = useState<Question[]>(() => {
         try {
@@ -207,6 +207,7 @@ export const CommunityView: React.FC<CommunityViewProps> = ({ isDark, userRole }
                         <button 
                             onClick={() => setSelectedUser(null)}
                             className="absolute top-4 right-4 opacity-60 hover:opacity-100"
+                            aria-label="Close Profile"
                         >
                             <iconify-icon icon="solar:close-circle-bold" className="text-2xl"></iconify-icon>
                         </button>
@@ -249,8 +250,8 @@ export const CommunityView: React.FC<CommunityViewProps> = ({ isDark, userRole }
             {/* Header Action */}
             <div className="flex flex-wrap justify-between items-center mb-8 gap-4">
                 <div>
-                    <h2 className={`text-3xl font-bold ${isDark ? 'font-future text-white' : 'font-heritage text-h-ink'}`}>Global Forum</h2>
-                    <p className="opacity-60 text-sm mt-1">Ask questions, share wisdom, and grow together.</p>
+                    <h2 className={`text-3xl font-bold ${isDark ? 'font-future text-white' : 'font-heritage text-h-ink'}`}>{t.globalForum}</h2>
+                    <p className="opacity-60 text-sm mt-1">{t.communitySubtitle}</p>
                 </div>
                 <div className="flex gap-4 items-center w-full md:w-auto">
                     {/* Search Bar */}
@@ -258,7 +259,7 @@ export const CommunityView: React.FC<CommunityViewProps> = ({ isDark, userRole }
                         <iconify-icon icon="solar:magnifer-bold" className="opacity-50"></iconify-icon>
                         <input 
                             type="text" 
-                            placeholder="Search questions..." 
+                            placeholder={t.searchQuestions}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="bg-transparent outline-none text-sm w-full"
@@ -269,9 +270,10 @@ export const CommunityView: React.FC<CommunityViewProps> = ({ isDark, userRole }
                         onClick={() => setShowAskForm(!showAskForm)}
                         className={`px-6 py-3 rounded-xl font-bold uppercase tracking-widest text-xs transition-all flex items-center gap-2 shrink-0
                         ${isDark ? 'bg-f-neon text-black hover:shadow-[0_0_15px_#00F0FF]' : 'bg-h-accent text-white hover:bg-h-accent/90'}`}
+                        aria-label={showAskForm ? t.cancel : t.askQuestion}
                     >
                         <iconify-icon icon={showAskForm ? "solar:close-circle-bold" : "solar:pen-new-square-bold"} className="text-lg"></iconify-icon>
-                        <span className="hidden md:inline">{showAskForm ? "Cancel" : "Ask"}</span>
+                        <span className="hidden md:inline">{showAskForm ? t.cancel : t.askQuestion}</span>
                     </button>
                 </div>
             </div>
@@ -279,16 +281,16 @@ export const CommunityView: React.FC<CommunityViewProps> = ({ isDark, userRole }
             {/* Ask Form */}
             {showAskForm && (
                 <div className={`p-6 rounded-2xl mb-8 animate-fade ${isDark ? 'glass-panel border-f-neon/30' : 'paper-panel border-h-accent/30'}`}>
-                    <h3 className={`text-lg font-bold mb-4 ${isDark ? 'text-f-neon' : 'text-h-accent'}`}>Draft your Query</h3>
+                    <h3 className={`text-lg font-bold mb-4 ${isDark ? 'text-f-neon' : 'text-h-accent'}`}>{t.draftQuery}</h3>
                     <input 
                         type="text" 
-                        placeholder="Title: What's on your mind?" 
+                        placeholder={t.questionTitlePlaceholder}
                         value={newQuestionTitle}
                         onChange={(e) => setNewQuestionTitle(e.target.value)}
                         className={`w-full p-4 rounded-xl mb-4 bg-transparent border ${isDark ? 'border-gray-700 focus:border-f-neon' : 'border-gray-300 focus:border-h-accent'} outline-none transition-colors`}
                     />
                     <textarea 
-                        placeholder="Describe your question in detail..." 
+                        placeholder={t.questionDescPlaceholder}
                         value={newQuestionDesc}
                         onChange={(e) => setNewQuestionDesc(e.target.value)}
                         className={`w-full p-4 h-32 rounded-xl mb-4 bg-transparent border ${isDark ? 'border-gray-700 focus:border-f-neon' : 'border-gray-300 focus:border-h-accent'} outline-none transition-colors resize-none`}
@@ -299,7 +301,7 @@ export const CommunityView: React.FC<CommunityViewProps> = ({ isDark, userRole }
                             className={`px-8 py-3 rounded-xl font-bold uppercase tracking-widest text-xs
                             ${isDark ? 'bg-f-purple text-white' : 'bg-h-gold text-white'}`}
                         >
-                            Post Question
+                            {t.postQuestion}
                         </button>
                     </div>
                 </div>
@@ -310,7 +312,7 @@ export const CommunityView: React.FC<CommunityViewProps> = ({ isDark, userRole }
                 {filteredQuestions.length === 0 && (
                     <div className="text-center py-20 opacity-50">
                         <iconify-icon icon="solar:confounded-square-bold" className="text-4xl mb-2"></iconify-icon>
-                        <p>No questions found matching your search.</p>
+                        <p>{t.noQuestionsFound}</p>
                     </div>
                 )}
                 {filteredQuestions.map(q => (
@@ -333,9 +335,9 @@ export const CommunityView: React.FC<CommunityViewProps> = ({ isDark, userRole }
                             
                             {/* Voting System */}
                             <div className={`flex flex-col items-center gap-1 p-1 rounded-lg ${isDark ? 'bg-white/5' : 'bg-black/5'}`}>
-                                <button onClick={() => handleVote(q.id, 1)} className="hover:text-green-500 transition-colors"><iconify-icon icon="solar:alt-arrow-up-bold"></iconify-icon></button>
+                                <button onClick={() => handleVote(q.id, 1)} className="hover:text-green-500 transition-colors" aria-label={t.upvote}><iconify-icon icon="solar:alt-arrow-up-bold"></iconify-icon></button>
                                 <span className="text-xs font-bold">{q.upvotes}</span>
-                                <button onClick={() => handleVote(q.id, -1)} className="hover:text-red-500 transition-colors"><iconify-icon icon="solar:alt-arrow-down-bold"></iconify-icon></button>
+                                <button onClick={() => handleVote(q.id, -1)} className="hover:text-red-500 transition-colors" aria-label={t.downvote}><iconify-icon icon="solar:alt-arrow-down-bold"></iconify-icon></button>
                             </div>
                         </div>
 
@@ -367,7 +369,7 @@ export const CommunityView: React.FC<CommunityViewProps> = ({ isDark, userRole }
                             <div className="flex gap-2 mt-4">
                                 <input 
                                     type="text" 
-                                    placeholder="Write a reply..." 
+                                    placeholder={t.writeReply}
                                     value={replyText[q.id] || ""}
                                     onChange={(e) => setReplyText({ ...replyText, [q.id]: e.target.value })}
                                     className={`flex-1 p-3 rounded-xl text-sm bg-transparent border ${isDark ? 'border-gray-700 focus:border-gray-500' : 'border-gray-300 focus:border-gray-500'} outline-none min-w-0`}
@@ -375,6 +377,7 @@ export const CommunityView: React.FC<CommunityViewProps> = ({ isDark, userRole }
                                 <button 
                                     onClick={() => handlePostReply(q.id)}
                                     className={`shrink-0 p-3 rounded-xl flex items-center justify-center transition-colors ${isDark ? 'bg-white/10 hover:bg-f-neon hover:text-black' : 'bg-black/10 hover:bg-h-accent hover:text-white'}`}
+                                    aria-label={t.reply}
                                 >
                                     <iconify-icon icon="solar:plain-3-bold"></iconify-icon>
                                 </button>

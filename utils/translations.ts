@@ -123,7 +123,7 @@ export const translations = {
         class: "Class",
         videoLecture: "Video Lecture",
         chapterNotes: "Chapter Notes",
-        downloadPdf: "Download PDF",
+        downloadNotes: "Study Notes",
         markChapterComplete: "Mark Chapter Complete",
 
         // Daily Growth
@@ -145,7 +145,25 @@ export const translations = {
         fullName: "Full Name",
         bio: "Bio / Tagline",
         interests: "Interests (Comma separated)",
-        changesSaved: "Changes Saved Successfully"
+        changesSaved: "Changes Saved Successfully",
+
+        // Community
+        globalForum: "Global Forum",
+        askQuestion: "Ask a Question",
+        postQuestion: "Post Question",
+        writeReply: "Write a reply...",
+        searchQuestions: "Search questions...",
+        noQuestionsFound: "No questions found",
+        draftQuery: "Draft your Query",
+        replies: "Replies",
+        reply: "Reply",
+        upvote: "Upvote",
+        downvote: "Downvote",
+        community: "Community",
+        questionTitlePlaceholder: "Title: What's on your mind?",
+        questionDescPlaceholder: "Describe your question in detail...",
+        communitySubtitle: "Ask questions, share wisdom, and grow together.",
+        downloadPdf: "Download PDF"
     },
     hi: {
         // General
@@ -271,7 +289,7 @@ export const translations = {
         class: "कक्षा",
         videoLecture: "वीडियो व्याख्यान",
         chapterNotes: "अध्याय नोट्स",
-        downloadPdf: "पीडीएफ डाउनलोड करें",
+        downloadNotes: "अध्ययन नोट्स",
         markChapterComplete: "अध्याय पूर्ण चिह्नित करें",
 
         // Daily Growth
@@ -293,6 +311,24 @@ export const translations = {
         fullName: "पूरा नाम",
         bio: "बायो / टैगलाइन",
         interests: "रुचियां (अल्पविराम से अलग)",
-        changesSaved: "परिवर्तन सफलतापूर्वक सहेजे गए"
+        changesSaved: "परिवर्तन सफलतापूर्वक सहेजे गए",
+
+        // Community
+        globalForum: "वैश्विक मंच",
+        askQuestion: "प्रश्न पूछें",
+        postQuestion: "प्रश्न पोस्ट करें",
+        writeReply: "उत्तर लिखें...",
+        searchQuestions: "प्रश्न खोजें...",
+        noQuestionsFound: "कोई प्रश्न नहीं मिला",
+        draftQuery: "अपना प्रश्न लिखें",
+        replies: "उत्तर",
+        reply: "उत्तर दें",
+        upvote: "अपवोट",
+        downvote: "डाउनवोट",
+        community: "समुदाय",
+        questionTitlePlaceholder: "शीर्षक: आपके दिमाग में क्या है?",
+        questionDescPlaceholder: "अपने प्रश्न का विस्तार से वर्णन करें...",
+        communitySubtitle: "प्रश्न पूछें, ज्ञान साझा करें, और एक साथ बढ़ें।",
+        downloadPdf: "पीडीएफ डाउनलोड करें"
     }
 };

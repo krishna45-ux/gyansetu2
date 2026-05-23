@@ -1,13 +1,10 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useAppContext } from '../contexts/AppContext';
 import { searchContent, SearchResults } from '../services/dbService';
 
-interface SearchBarProps {
-    isDark: boolean;
-    onNavigate: (view: string) => void;
-}
-
-export const SearchBar: React.FC<SearchBarProps> = ({ isDark, onNavigate }) => {
+export const SearchBar: React.FC = () => {
+    const { isDark, setView: onNavigate } = useAppContext();
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<SearchResults>({ resources: [], quizzes: [] });
     const [isOpen, setIsOpen] = useState(false);

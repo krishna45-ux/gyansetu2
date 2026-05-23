@@ -1,16 +1,16 @@
 import React from 'react';
-import { ThemeProps, Language } from '../types';
+import { Language } from '../types';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { LanguageToggle } from '../components/LanguageToggle';
 import { translations } from '../utils/translations';
+import { useAppContext } from '../contexts/AppContext';
 
-interface LandingPageProps extends ThemeProps {
+interface LandingPageProps {
     onStart: () => void;
-    language: Language;
-    setLanguage: (lang: Language) => void;
 }
 
-export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isDark, toggleTheme, language, setLanguage }) => {
+export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
+    const { isDark, toggleTheme, language, setLanguage } = useAppContext();
     const t = translations[language];
 
     return (
@@ -21,8 +21,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isDark, toggl
                     <h1 className={`text-lg md:text-xl font-bold tracking-widest ${isDark ? 'font-future text-f-neon' : 'font-heritage text-h-accent'}`}>{t.appTitle}</h1>
                 </div>
                 <div className="flex items-center gap-3 md:gap-4">
-                    <LanguageToggle language={language} setLanguage={setLanguage} isDark={isDark} />
-                    <ThemeToggle isDark={isDark} toggleTheme={toggleTheme} language={language} />
+                    <LanguageToggle />
+                    <ThemeToggle />
                     <button onClick={onStart} className={`hidden md:block px-6 py-2 rounded-lg font-bold text-xs uppercase tracking-widest border transition-all ${isDark ? 'border-f-neon text-f-neon hover:bg-f-neon hover:text-black' : 'border-h-accent text-h-accent hover:bg-h-accent hover:text-white'}`}>{t.login}</button>
                 </div>
             </nav>

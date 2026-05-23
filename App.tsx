@@ -8,12 +8,14 @@ import { StudentDashboard } from './views/StudentDashboard';
 import { TeacherDashboard } from './views/TeacherDashboard';
 import { CareerPathView } from './views/CareerPathView';
 import { SettingsView } from './views/SettingsView';
+import { CommunityView } from './views/CommunityView';
 import { DailyGrowthView } from './views/DailyGrowthView';
 import { CurriculumView } from './views/CurriculumView';
 import { Role, ViewState, Language } from './types';
 import { translations } from './utils/translations';
 import { apiRequest } from './services/api';
 import { SearchBar } from './components/SearchBar';
+import { AppProvider } from './contexts/AppContext';
 
 const App: React.FC = () => {
     // Initial State Logic
@@ -63,25 +65,34 @@ const App: React.FC = () => {
         localStorage.setItem('gyansetu_lang', language);
     }, [language]);
 
-    // --- SESSION CHECK ---
+    // --- SESSION CHECK & CROSS-TAB LOGOUT ---
     useEffect(() => {
         const checkSession = async () => {
             const token = localStorage.getItem('gyansetu_token');
             if (token) {
-                console.log("Found session token, verifying...");
+                if (import.meta.env.DEV) console.log("Found session token, verifying...");
                 try {
                     // Validate token with backend
                     const profile = await apiRequest('/auth/me', 'GET');
-                    console.log("Session Verified:", profile.email);
+                    if (import.meta.env.DEV) console.log("Session Verified:", profile.email);
                 } catch (e) {
-                    console.warn("Session invalid, logging out.");
+                    if (import.meta.env.DEV) console.warn("Session invalid, logging out.");
                     logout();
                 }
             } else {
-                console.log("No active session.");
+                if (import.meta.env.DEV) console.log("No active session.");
             }
         };
         checkSession();
+
+        // Listen for logouts from other tabs
+        const handleStorageChange = (e: StorageEvent) => {
+            if (e.key === 'gyansetu_token' && !e.newValue) {
+                logout();
+            }
+        };
+        window.addEventListener('storage', handleStorageChange);
+        return () => window.removeEventListener('storage', handleStorageChange);
     }, []);
 
     // Role Logic
@@ -113,6 +124,7 @@ const App: React.FC = () => {
         { id: 'curriculum', icon: 'solar:book-bookmark-bold', label: t.curriculum },
         { id: 'daily_growth', icon: 'solar:leaf-bold', label: t.dailyGrowth },
         { id: 'career_path', icon: 'solar:map-point-wave-bold', label: t.careerPath },
+        { id: 'community', icon: 'solar:users-group-two-rounded-bold', label: (t as any).community || 'Community' },
         { id: 'settings', icon: 'solar:settings-bold', label: t.settings },
     ] : [
         { id: 'teacher_dashboard', icon: 'solar:widget-5-bold', label: t.dashboard },
@@ -120,29 +132,33 @@ const App: React.FC = () => {
         { id: 'settings', icon: 'solar:settings-bold', label: t.settings },
     ];
 
+    const contextValue = {
+        isDark,
+        toggleTheme,
+        language,
+        setLanguage,
+        userRole,
+        userEmail,
+        view,
+        setView,
+        logout
+    };
+
     // Conditional Rendering for Layout-less views
     if (view === 'landing') return (
-        <LandingPage
-            onStart={() => setView('auth')}
-            isDark={isDark}
-            toggleTheme={toggleTheme}
-            language={language}
-            setLanguage={setLanguage}
-        />
+        <AppProvider value={contextValue}>
+            <LandingPage onStart={() => setView('auth')} />
+        </AppProvider>
     );
     if (view === 'auth') return (
-        <AuthSystem
-            onAuth={handleAuth}
-            isDark={isDark}
-            toggleTheme={toggleTheme}
-            onBack={() => setView('landing')}
-            language={language}
-            setLanguage={setLanguage}
-        />
+        <AppProvider value={contextValue}>
+            <AuthSystem onAuth={handleAuth} onBack={() => setView('landing')} />
+        </AppProvider>
     );
 
     // Main App Layout
     return (
+        <AppProvider value={contextValue}>
         <div className={`flex h-screen w-screen overflow-hidden ${isDark ? 'bg-grid-pattern' : 'bg-paper-texture'}`}>
             {/* SIDEBAR (Desktop/Tablet) */}
             <aside className={`hidden md:flex w-20 lg:w-64 border-r flex-col transition-all duration-300 z-50 ${isDark ? 'border-gray-800 bg-f-base/90' : 'border-h-accent/20 bg-h-base'}`}>
@@ -173,11 +189,14 @@ const App: React.FC = () => {
             {/* CONTENT AREA */}
             <main className="flex-1 flex flex-col overflow-hidden relative">
                 <header className={`h-16 md:h-20 flex items-center justify-between px-4 md:px-8 border-b border-opacity-10 border-gray-500 ${isDark ? 'bg-f-base/80' : 'bg-h-paper/80'} backdrop-blur-md z-20`}>
-                    <h2 className={`text-lg md:text-xl font-bold uppercase tracking-widest ${isDark ? 'text-white font-future' : 'text-h-ink font-heritage'}`}>{view.replace('_', ' ')}</h2>
+                    <h2 className={`text-lg md:text-xl font-bold uppercase tracking-widest ${isDark ? 'text-white font-future' : 'text-h-ink font-heritage'}`}>
+                        {/* Map view ID to title based on translation or fall back to view name formatted */}
+                        {(t as any)[view.replace(/_([a-z])/g, (g) => g[1].toUpperCase())] || view.replace('_', ' ')}
+                    </h2>
                     <div className="flex items-center gap-3 md:gap-4">
-                        <SearchBar isDark={isDark} onNavigate={setView} />
-                        <LanguageToggle language={language} setLanguage={setLanguage} isDark={isDark} />
-                        <ThemeToggle isDark={isDark} toggleTheme={toggleTheme} language={language} />
+                        <SearchBar />
+                        <LanguageToggle />
+                        <ThemeToggle />
                         <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full border-2 overflow-hidden transition-all duration-300 ${isDark ? 'border-f-neon shadow-[0_0_10px_#00F0FF]' : 'border-h-accent shadow-md'}`}>
                             <div className={`w-full h-full flex items-center justify-center text-lg font-bold ${isDark ? 'bg-gray-800 text-white' : 'bg-h-accent text-white'}`}>
                                 {userEmail ? userEmail.charAt(0).toUpperCase() : 'U'}
@@ -189,12 +208,13 @@ const App: React.FC = () => {
                 {/* Scrollable View Area - Added bottom padding for mobile nav */}
                 <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-10 transition-all duration-500 pb-24 md:pb-10">
                     {/* WE PASS THE USER EMAIL AS A PROP TO ENSURE DATA IS SCOPED TO THE USER */}
-                    {view === 'student_dashboard' && <StudentDashboard isDark={isDark} lang={language} onNavigate={setView} userEmail={userEmail || 'guest'} />}
-                    {view === 'teacher_dashboard' && <TeacherDashboard isDark={isDark} lang={language} userEmail={userEmail || 'guest'} />}
-                    {view === 'career_path' && <CareerPathView isDark={isDark} lang={language} onNavigate={setView} userEmail={userEmail || 'guest'} />}
-                    {view === 'settings' && <SettingsView isDark={isDark} role={userRole} lang={language} userEmail={userEmail || 'guest'} />}
-                    {view === 'daily_growth' && <DailyGrowthView isDark={isDark} lang={language} />}
-                    {view === 'curriculum' && <CurriculumView isDark={isDark} lang={language} userEmail={userEmail || 'guest'} />}
+                    {view === 'student_dashboard' && <StudentDashboard />}
+                    {view === 'teacher_dashboard' && <TeacherDashboard />}
+                    {view === 'career_path' && <CareerPathView />}
+                    {view === 'settings' && <SettingsView />}
+                    {view === 'daily_growth' && <DailyGrowthView />}
+                    {view === 'curriculum' && <CurriculumView />}
+                    {view === 'community' && <CommunityView />}
                 </div>
 
                 {/* BOTTOM NAVIGATION (Mobile Only) */}
@@ -216,6 +236,7 @@ const App: React.FC = () => {
                 </nav>
             </main>
         </div>
+        </AppProvider>
     );
 };
 

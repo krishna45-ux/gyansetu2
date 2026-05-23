@@ -46,11 +46,14 @@ if IS_PRODUCTION:
 
 # ── Cloudinary Configuration (Phase 2) ──────
 cloudinary.config(
-    cloud_name=os.environ.get("CLOUDINARY_CLOUD_NAME", "di66mvmgz"),
-    api_key=os.environ.get("CLOUDINARY_API_KEY", "549631319941797"),
-    api_secret=os.environ.get("CLOUDINARY_API_SECRET", "KN7IUP36_pCwLhJFGuVSdPHaUqg"),
+    cloud_name=os.environ.get("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.environ.get("CLOUDINARY_API_KEY"),
+    api_secret=os.environ.get("CLOUDINARY_API_SECRET"),
     secure=True
 )
+
+if not os.environ.get("CLOUDINARY_CLOUD_NAME") or not os.environ.get("CLOUDINARY_API_KEY") or not os.environ.get("CLOUDINARY_API_SECRET"):
+    print("[WARN] Cloudinary credentials missing. File uploads will fail.")
 
 # ── Firebase Admin (Phase 2 — Google OAuth) ─
 firebase_app = None
@@ -93,8 +96,8 @@ if FRONTEND_URL:
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -561,7 +564,11 @@ def update_last_watched(
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(database.get_db)
 ):
-    current_user.last_watched = json.dumps({"subject": data.subject, "chapter": data.chapter})
+    current_user.last_watched = json.dumps({
+        "subject": data.subject, 
+        "chapter": data.chapter, 
+        "classLevel": data.classLevel
+    })
     db.commit()
     return {"message": "Progress saved"}
 
@@ -610,6 +617,6 @@ def get_students(
             "averageScore": avg_score,
             "quizzesTaken": len(submissions),
             "lastTwoScores": last_two,
-            "status": "Active"
+            "status": "Online"
         })
     return result

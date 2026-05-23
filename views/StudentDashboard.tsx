@@ -5,15 +5,10 @@ import { translations } from '../utils/translations';
 
 import { GoogleGenAI } from "@google/genai";
 import { getUserProfile, getLastWatched, getCareerGoal, getResources, getQuizzes } from '../services/dbService';
+import { useAppContext } from '../contexts/AppContext';
 
-interface StudentDashboardProps {
-    isDark: boolean;
-    lang: Language;
-    onNavigate?: (view: ViewState) => void;
-    userEmail: string;
-}
-
-export const StudentDashboard: React.FC<StudentDashboardProps> = ({ isDark, lang, onNavigate, userEmail }) => {
+export const StudentDashboard: React.FC = () => {
+    const { isDark, language: lang, setView: onNavigate, userEmail } = useAppContext();
     const [name, setName] = useState("Student");
     const [fullName, setFullName] = useState("");
     const [resources, setResources] = useState<ClassResource[]>([]);
@@ -44,11 +39,11 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ isDark, lang
             }
 
             // 2. Load Last Watched (No UID needed, backend handles it via token)
-            const last = await getLastWatched("");
+            const last = await getLastWatched();
             if (last) setLastWatched(last);
 
             // 3. Load Career Goal
-            const goal = await getCareerGoal("");
+            const goal = await getCareerGoal();
             if (goal) setCareerGoal(goal);
 
             // 4. Load Resources from Cloud
@@ -359,24 +354,25 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ isDark, lang
                 <div className={`p-5 md:p-6 rounded-2xl ${isDark ? 'glass-panel' : 'paper-panel'}`}>
                     <h3 className="font-bold uppercase tracking-widest text-xs mb-4 opacity-60">Upcoming</h3>
                     <div className="space-y-4">
-                        <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-xs ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`}>
-                                <span>12<br />OCT</span>
-                            </div>
-                            <div>
-                                <div className="text-sm font-bold">Physics Quiz</div>
-                                <div className="text-xs opacity-60">Chapter 4: Motion</div>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-xs ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`}>
-                                <span>14<br />OCT</span>
-                            </div>
-                            <div>
-                                <div className="text-sm font-bold">Project Submission</div>
-                                <div className="text-xs opacity-60">Environmental Science</div>
-                            </div>
-                        </div>
+                        {[
+                            { title: "Physics Quiz", desc: "Chapter 4: Motion", daysFromNow: 3 },
+                            { title: "Project Submission", desc: "Environmental Science", daysFromNow: 5 },
+                        ].map((item, idx) => {
+                            const date = new Date(Date.now() + item.daysFromNow * 86400000);
+                            const day = date.getDate();
+                            const month = date.toLocaleString('default', { month: 'short' }).toUpperCase();
+                            return (
+                                <div key={idx} className="flex items-center gap-3">
+                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-xs ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`}>
+                                        <span className="text-center leading-tight">{day}<br />{month}</span>
+                                    </div>
+                                    <div>
+                                        <div className="text-sm font-bold">{item.title}</div>
+                                        <div className="text-xs opacity-60">{item.desc}</div>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             </div>
