@@ -50,6 +50,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                     ))}
                 </div>
             </main>
+
+            <footer className="w-full py-8 border-t border-opacity-10 border-gray-500 mt-20 backdrop-blur-sm z-50 text-center flex flex-col items-center gap-3">
+                <div className="flex items-center gap-2">
+                    <span className="text-xs uppercase tracking-widest opacity-40">Created by Lead Developer</span>
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest transition-all duration-300 hover:scale-105 ${isDark ? 'bg-f-neon/15 text-f-neon border border-f-neon/30 shadow-[0_0_15px_rgba(56,189,248,0.1)]' : 'bg-h-accent/10 text-h-accent border border-h-accent/20'}`}>
+                        Amit Kumar
+                    </span>
+                </div>
+                <p className="text-[10px] opacity-35 tracking-widest">
+                    &copy; {new Date().getFullYear()} GYANSETU. All Rights Reserved.
+                </p>
+            </footer>
         </div>
     );
 };
