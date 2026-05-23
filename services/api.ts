@@ -204,6 +204,32 @@ const mockBackend = async (endpoint: string, method: string, body: any, isFormDa
             });
     }
 
+    // 10. CHAPTER VIDEOS
+    if (endpoint === '/chapter-videos') {
+        if (method === 'GET') {
+            return JSON.parse(localStorage.getItem('gyansetu_db_chapter_videos') || '[]');
+        }
+        if (method === 'POST') {
+            const list = JSON.parse(localStorage.getItem('gyansetu_db_chapter_videos') || '[]');
+            const idx = list.findIndex((x: any) => 
+                x.class_level === body.class_level && 
+                x.subject === body.subject && 
+                x.chapter === body.chapter
+            );
+            const entry = {
+                id: idx > -1 ? list[idx].id : Date.now(),
+                ...body
+            };
+            if (idx > -1) {
+                list[idx] = entry;
+            } else {
+                list.push(entry);
+            }
+            localStorage.setItem('gyansetu_db_chapter_videos', JSON.stringify(list));
+            return entry;
+        }
+    }
+
     throw new Error("404 Not Found");
 };
 

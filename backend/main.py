@@ -621,3 +621,44 @@ def get_students(
             "status": "Online"
         })
     return result
+
+
+@app.get("/chapter-videos", response_model=List[schemas.ChapterVideoResponse])
+def get_all_chapter_videos(db: Session = Depends(database.get_db)):
+    return db.query(models.ChapterVideo).all()
+
+
+@app.post("/chapter-videos", response_model=schemas.ChapterVideoResponse)
+def update_chapter_videos(
+    video_data: schemas.ChapterVideoCreate,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(database.get_db)
+):
+    if current_user.role != "teacher":
+        raise HTTPException(status_code=403, detail="Only teachers can customize curriculum videos")
+
+    db_video = db.query(models.ChapterVideo).filter(
+        models.ChapterVideo.class_level == video_data.class_level,
+        models.ChapterVideo.subject == video_data.subject,
+        models.ChapterVideo.chapter == video_data.chapter
+    ).first()
+
+    if db_video:
+        db_video.concept_video = video_data.concept_video
+        db_video.animated_video = video_data.animated_video
+        db_video.realworld_video = video_data.realworld_video
+    else:
+        db_video = models.ChapterVideo(
+            class_level=video_data.class_level,
+            subject=video_data.subject,
+            chapter=video_data.chapter,
+            concept_video=video_data.concept_video,
+            animated_video=video_data.animated_video,
+            realworld_video=video_data.realworld_video
+        )
+        db.add(db_video)
+
+    db.commit()
+    db.refresh(db_video)
+    return db_video
+

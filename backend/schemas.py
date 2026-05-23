@@ -123,3 +123,26 @@ class UploadResponse(BaseModel):
     url: str
     filename: str
     resource_type: str
+
+
+# --- Chapter Video Schemas ---
+class ChapterVideoCreate(BaseModel):
+    class_level: int
+    subject: str
+    chapter: str
+    concept_video: Optional[str] = None
+    animated_video: Optional[str] = None
+    realworld_video: Optional[str] = None
+
+class ChapterVideoResponse(BaseModel):
+    id: int
+    class_level: int
+    subject: str
+    chapter: str
+    concept_video: Optional[str] = None
+    animated_video: Optional[str] = None
+    realworld_video: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+

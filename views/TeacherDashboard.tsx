@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { StatCard } from '../components/StatCard';
 import { ClassResource, Language, StudentPerformance, Quiz, QuizQuestion } from '../types';
 import { translations } from '../utils/translations';
-import { getAllStudents, postResource, getResources, deleteResource, postQuiz, getQuizzes, uploadResourceFile } from '../services/dbService';
+import { getAllStudents, postResource, getResources, deleteResource, postQuiz, getQuizzes, uploadResourceFile, getChapterVideosDB, updateChapterVideosDB } from '../services/dbService';
 import { useAppContext } from '../contexts/AppContext';
+import { SYLLABUS_DATA, CHAPTER_VIDEO_MAP } from '../utils/curriculumData';
 
 export const TeacherDashboard: React.FC = () => {
     const { isDark, language: lang, userEmail } = useAppContext();
-    const [viewMode, setViewMode] = useState<'dashboard' | 'all_students' | 'at_risk' | 'create_quiz'>('dashboard');
+    const [viewMode, setViewMode] = useState<'dashboard' | 'all_students' | 'at_risk' | 'create_quiz' | 'manage_videos'>('dashboard');
     const [students, setStudents] = useState<StudentPerformance[]>([]);
     const [resources, setResources] = useState<ClassResource[]>([]);
     const [quizzes, setQuizzes] = useState<Quiz[]>([]);
@@ -35,6 +36,109 @@ export const TeacherDashboard: React.FC = () => {
     // Remedial Assignment State
     const [selectedStudentForRemedial, setSelectedStudentForRemedial] = useState<string | null>(null);
     const [selectedRemedialChapter, setSelectedRemedialChapter] = useState("Force and Laws of Motion");
+
+    // Manage Videos Form State
+    const [selectedVideoClass, setSelectedVideoClass] = useState<number>(6);
+    const [selectedVideoSubject, setSelectedVideoSubject] = useState<string>("Mathematics");
+    const [selectedVideoChapter, setSelectedVideoChapter] = useState<string>("");
+    const [videoConceptUrl, setVideoConceptUrl] = useState<string>("");
+    const [videoAnimatedUrl, setVideoAnimatedUrl] = useState<string>("");
+    const [videoRealworldUrl, setVideoRealworldUrl] = useState<string>("");
+    const [customVideosList, setCustomVideosList] = useState<any[]>([]);
+    const [savingVideos, setSavingVideos] = useState<boolean>(false);
+
+    // Load all custom videos once
+    useEffect(() => {
+        const loadCustomVideos = async () => {
+            try {
+                const list = await getChapterVideosDB();
+                setCustomVideosList(list);
+            } catch (e) {
+                console.error("Failed to load custom videos", e);
+            }
+        };
+        loadCustomVideos();
+    }, []);
+
+    // Set active chapter when class or subject changes
+    useEffect(() => {
+        if (SYLLABUS_DATA[selectedVideoClass] && SYLLABUS_DATA[selectedVideoClass][selectedVideoSubject]) {
+            const chapters = SYLLABUS_DATA[selectedVideoClass][selectedVideoSubject];
+            setSelectedVideoChapter(chapters[0] || "");
+        }
+    }, [selectedVideoClass, selectedVideoSubject]);
+
+    // Set video inputs when active chapter changes
+    useEffect(() => {
+        if (!selectedVideoChapter) return;
+        const record = customVideosList.find((v: any) =>
+            v.class_level === selectedVideoClass &&
+            v.subject.toLowerCase() === selectedVideoSubject.toLowerCase() &&
+            v.chapter.toLowerCase() === selectedVideoChapter.toLowerCase()
+        );
+        const defaultVideoId = CHAPTER_VIDEO_MAP[selectedVideoChapter] || "OoO5d5P0Jn4";
+        setVideoConceptUrl(record?.concept_video || defaultVideoId);
+        setVideoAnimatedUrl(record?.animated_video || defaultVideoId);
+        setVideoRealworldUrl(record?.realworld_video || defaultVideoId);
+    }, [selectedVideoChapter, selectedVideoClass, selectedVideoSubject, customVideosList]);
+
+    const extractYoutubeId = (urlOrId: string): string => {
+        if (!urlOrId) return "";
+        const clean = urlOrId.trim();
+        if (clean.length === 11) return clean; // Already a raw ID
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+        const match = clean.match(regExp);
+        return (match && match[2].length === 11) ? match[2] : clean;
+    };
+
+    const handleSaveVideos = async () => {
+        if (!selectedVideoChapter) {
+            alert("Please select a chapter first!");
+            return;
+        }
+
+        const conceptId = extractYoutubeId(videoConceptUrl);
+        const animatedId = extractYoutubeId(videoAnimatedUrl);
+        const realworldId = extractYoutubeId(videoRealworldUrl);
+
+        if (!conceptId || !animatedId || !realworldId) {
+            alert("Please provide valid YouTube URLs or Video IDs for all three types.");
+            return;
+        }
+
+        setSavingVideos(true);
+        try {
+            const updated = await updateChapterVideosDB({
+                class_level: selectedVideoClass,
+                subject: selectedVideoSubject,
+                chapter: selectedVideoChapter,
+                concept_video: conceptId,
+                animated_video: animatedId,
+                realworld_video: realworldId
+            });
+
+            // Update local list
+            const index = customVideosList.findIndex((v: any) =>
+                v.class_level === selectedVideoClass &&
+                v.subject.toLowerCase() === selectedVideoSubject.toLowerCase() &&
+                v.chapter.toLowerCase() === selectedVideoChapter.toLowerCase()
+            );
+
+            const newList = [...customVideosList];
+            if (index > -1) {
+                newList[index] = updated;
+            } else {
+                newList.push(updated);
+            }
+            setCustomVideosList(newList);
+            alert("🎉 Curriculum videos updated successfully! These changes are now live for all students.");
+        } catch (e) {
+            console.error(e);
+            alert("Failed to save custom videos. Please try again.");
+        } finally {
+            setSavingVideos(false);
+        }
+    };
 
     const t = translations[lang];
 
@@ -235,6 +339,7 @@ export const TeacherDashboard: React.FC = () => {
                 <button onClick={() => setViewMode('all_students')} className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${viewMode === 'all_students' ? (isDark ? 'bg-white text-black' : 'bg-h-ink text-white') : 'opacity-50 hover:opacity-100'}`}>{t.totalStudents}</button>
                 <button onClick={() => setViewMode('at_risk')} className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${viewMode === 'at_risk' ? (isDark ? 'bg-red-500 text-white' : 'bg-red-600 text-white') : 'opacity-50 hover:opacity-100 text-red-500'}`}>{t.atRisk}</button>
                 <button onClick={() => setViewMode('create_quiz')} className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${viewMode === 'create_quiz' ? (isDark ? 'bg-f-purple text-white' : 'bg-h-gold text-white') : 'opacity-50 hover:opacity-100'}`}>{t.createQuiz}</button>
+                <button onClick={() => setViewMode('manage_videos')} className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${viewMode === 'manage_videos' ? (isDark ? 'bg-white text-black' : 'bg-h-ink text-white') : 'opacity-50 hover:opacity-100'}`}>📹 Manage Videos</button>
             </div>
 
             {loading ? (
@@ -546,6 +651,174 @@ export const TeacherDashboard: React.FC = () => {
                                 ${isDark ? 'bg-f-purple text-white hover:shadow-[0_0_20px_rgba(189,0,255,0.4)]' : 'bg-h-gold text-white hover:shadow-lg'}`}
                             >
                                 {t.publishQuiz}
+                            </button>
+                        </div>
+                    )}
+
+                    {/* MANAGE VIDEOS VIEW */}
+                    {viewMode === 'manage_videos' && (
+                        <div className={`p-8 rounded-2xl animate-fade ${isDark ? 'glass-panel' : 'paper-panel'}`}>
+                            <div className="flex justify-between items-center mb-8">
+                                <div>
+                                    <h3 className={`text-xl font-bold ${isDark ? 'font-future text-white' : 'font-heritage text-h-ink'}`}>Manage Curriculum Videos</h3>
+                                    <p className="text-xs opacity-60 mt-1">Assign custom YouTube video lessons for each chapter, subject, and class level.</p>
+                                </div>
+                            </div>
+
+                            {/* SELECTORS */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                                <div>
+                                    <label className="block text-xs font-bold uppercase tracking-wider opacity-60 mb-2">Class</label>
+                                    <select
+                                        value={selectedVideoClass}
+                                        onChange={e => setSelectedVideoClass(parseInt(e.target.value))}
+                                        className={`w-full p-3 rounded-xl bg-transparent border outline-none ${isDark ? 'border-gray-700 focus:border-f-neon text-white bg-gray-905' : 'border-gray-300 focus:border-h-accent text-black bg-white'}`}
+                                        style={{ colorScheme: isDark ? 'dark' : 'light' }}
+                                    >
+                                        {[6, 7, 8, 9, 10].map(cls => (
+                                            <option key={cls} value={cls} className={isDark ? 'bg-gray-900 text-white' : 'bg-white text-black'}>Class {cls}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold uppercase tracking-wider opacity-60 mb-2">Subject</label>
+                                    <select
+                                        value={selectedVideoSubject}
+                                        onChange={e => setSelectedVideoSubject(e.target.value)}
+                                        className={`w-full p-3 rounded-xl bg-transparent border outline-none ${isDark ? 'border-gray-700 focus:border-f-neon text-white bg-gray-905' : 'border-gray-300 focus:border-h-accent text-black bg-white'}`}
+                                        style={{ colorScheme: isDark ? 'dark' : 'light' }}
+                                    >
+                                        {Object.keys(SYLLABUS_DATA[selectedVideoClass] || {}).map(sub => (
+                                            <option key={sub} value={sub} className={isDark ? 'bg-gray-900 text-white' : 'bg-white text-black'}>{sub}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold uppercase tracking-wider opacity-60 mb-2">Chapter</label>
+                                    <select
+                                        value={selectedVideoChapter}
+                                        onChange={e => setSelectedVideoChapter(e.target.value)}
+                                        className={`w-full p-3 rounded-xl bg-transparent border outline-none ${isDark ? 'border-gray-700 focus:border-f-neon text-white bg-gray-905' : 'border-gray-300 focus:border-h-accent text-black bg-white'}`}
+                                        style={{ colorScheme: isDark ? 'dark' : 'light' }}
+                                    >
+                                        {(SYLLABUS_DATA[selectedVideoClass]?.[selectedVideoSubject] || []).map(ch => (
+                                            <option key={ch} value={ch} className={isDark ? 'bg-gray-900 text-white' : 'bg-white text-black'}>{ch}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* VIDEO URL INPUTS & LIVE PREVIEWS */}
+                            <div className="space-y-8">
+                                {/* CONCEPT VIDEO */}
+                                <div className={`p-6 rounded-xl border ${isDark ? 'bg-white/5 border-white/10' : 'bg-black/5 border-black/10'}`}>
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        <div>
+                                            <div className="flex justify-between items-center mb-2">
+                                                <label className="text-sm font-bold uppercase tracking-wider text-green-500">1. Core Concept Video</label>
+                                                <span className="text-[10px] opacity-50">Paste any YouTube Link or Video ID</span>
+                                            </div>
+                                            <input
+                                                type="text"
+                                                placeholder="e.g. https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+                                                value={videoConceptUrl}
+                                                onChange={e => setVideoConceptUrl(e.target.value)}
+                                                className={`w-full p-3 rounded-lg bg-transparent border outline-none ${isDark ? 'border-gray-700 focus:border-f-neon text-white' : 'border-gray-300 focus:border-h-accent text-black'}`}
+                                            />
+                                            <p className="text-[10px] opacity-40 mt-1">Current ID: {extractYoutubeId(videoConceptUrl) || 'None'}</p>
+                                        </div>
+                                        <div className="aspect-video w-full max-w-[320px] rounded-lg overflow-hidden border border-gray-700 bg-black flex items-center justify-center mx-auto lg:mx-0">
+                                            {extractYoutubeId(videoConceptUrl) ? (
+                                                <iframe
+                                                    className="w-full h-full"
+                                                    src={`https://www.youtube.com/embed/${extractYoutubeId(videoConceptUrl)}`}
+                                                    title="Concept Preview"
+                                                    frameBorder="0"
+                                                    allowFullScreen
+                                                ></iframe>
+                                            ) : (
+                                                <div className="text-xs opacity-50">No Preview Available</div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* ANIMATED VIDEO */}
+                                <div className={`p-6 rounded-xl border ${isDark ? 'bg-white/5 border-white/10' : 'bg-black/5 border-black/10'}`}>
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        <div>
+                                            <div className="flex justify-between items-center mb-2">
+                                                <label className="text-sm font-bold uppercase tracking-wider text-blue-500">2. Animated & Visual Guide</label>
+                                                <span className="text-[10px] opacity-50">Paste any YouTube Link or Video ID</span>
+                                            </div>
+                                            <input
+                                                type="text"
+                                                placeholder="e.g. https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+                                                value={videoAnimatedUrl}
+                                                onChange={e => setVideoAnimatedUrl(e.target.value)}
+                                                className={`w-full p-3 rounded-lg bg-transparent border outline-none ${isDark ? 'border-gray-700 focus:border-f-neon text-white' : 'border-gray-300 focus:border-h-accent text-black'}`}
+                                            />
+                                            <p className="text-[10px] opacity-40 mt-1">Current ID: {extractYoutubeId(videoAnimatedUrl) || 'None'}</p>
+                                        </div>
+                                        <div className="aspect-video w-full max-w-[320px] rounded-lg overflow-hidden border border-gray-700 bg-black flex items-center justify-center mx-auto lg:mx-0">
+                                            {extractYoutubeId(videoAnimatedUrl) ? (
+                                                <iframe
+                                                    className="w-full h-full"
+                                                    src={`https://www.youtube.com/embed/${extractYoutubeId(videoAnimatedUrl)}`}
+                                                    title="Animated Preview"
+                                                    frameBorder="0"
+                                                    allowFullScreen
+                                                ></iframe>
+                                            ) : (
+                                                <div className="text-xs opacity-50">No Preview Available</div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* REAL WORLD VIDEO */}
+                                <div className={`p-6 rounded-xl border ${isDark ? 'bg-white/5 border-white/10' : 'bg-black/5 border-black/10'}`}>
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        <div>
+                                            <div className="flex justify-between items-center mb-2">
+                                                <label className="text-sm font-bold uppercase tracking-wider text-purple-500">3. Real World Application Video</label>
+                                                <span className="text-[10px] opacity-50">Paste any YouTube Link or Video ID</span>
+                                            </div>
+                                            <input
+                                                type="text"
+                                                placeholder="e.g. https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+                                                value={videoRealworldUrl}
+                                                onChange={e => setVideoRealworldUrl(e.target.value)}
+                                                className={`w-full p-3 rounded-lg bg-transparent border outline-none ${isDark ? 'border-gray-700 focus:border-f-neon text-white' : 'border-gray-300 focus:border-h-accent text-black'}`}
+                                            />
+                                            <p className="text-[10px] opacity-40 mt-1">Current ID: {extractYoutubeId(videoRealworldUrl) || 'None'}</p>
+                                        </div>
+                                        <div className="aspect-video w-full max-w-[320px] rounded-lg overflow-hidden border border-gray-700 bg-black flex items-center justify-center mx-auto lg:mx-0">
+                                            {extractYoutubeId(videoRealworldUrl) ? (
+                                                <iframe
+                                                    className="w-full h-full"
+                                                    src={`https://www.youtube.com/embed/${extractYoutubeId(videoRealworldUrl)}`}
+                                                    title="Real World Preview"
+                                                    frameBorder="0"
+                                                    allowFullScreen
+                                                ></iframe>
+                                            ) : (
+                                                <div className="text-xs opacity-50">No Preview Available</div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* SAVE BUTTON */}
+                            <button
+                                onClick={handleSaveVideos}
+                                disabled={savingVideos}
+                                className={`w-full py-4 rounded-xl font-bold uppercase tracking-widest transition-all mt-8 flex items-center justify-center gap-2
+                                ${isDark ? 'bg-f-neon text-black hover:shadow-[0_0_20px_#00F0FF]' : 'bg-h-accent text-white hover:shadow-lg'} disabled:opacity-50 disabled:cursor-not-allowed`}
+                            >
+                                <iconify-icon icon={savingVideos ? "solar:refresh-bold" : "solar:diskette-bold"} className={savingVideos ? "animate-spin text-lg" : "text-lg"}></iconify-icon>
+                                {savingVideos ? "Saving Videos..." : "Save Custom Videos"}
                             </button>
                         </div>
                     )}

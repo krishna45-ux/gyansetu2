@@ -200,3 +200,26 @@ export const searchContent = async (query: string): Promise<SearchResults> => {
         return { resources: [], quizzes: [] };
     }
 };
+
+// --- CHAPTER CUSTOM VIDEOS (Phase 3) ---
+
+export const getChapterVideosDB = async (): Promise<any[]> => {
+    try {
+        const videos = await apiRequest('/chapter-videos', 'GET');
+        return videos || [];
+    } catch (e) {
+        console.error("Failed to fetch custom chapter videos", e);
+        return [];
+    }
+};
+
+export const updateChapterVideosDB = async (data: {
+    class_level: number;
+    subject: string;
+    chapter: string;
+    concept_video: string;
+    animated_video: string;
+    realworld_video: string;
+}): Promise<any> => {
+    return await apiRequest('/chapter-videos', 'POST', data);
+};

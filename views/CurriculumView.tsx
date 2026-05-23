@@ -3,7 +3,7 @@ import { Language } from '../types';
 import { translations } from '../utils/translations';
 import { SYLLABUS_DATA, SUBJECT_ICONS, CHAPTER_VIDEO_MAP } from '../utils/curriculumData';
 import { GoogleGenAI, Type } from "@google/genai";
-import { saveLastWatched, getLastWatched, getCompletedChapters, markChapterCompleteDB } from '../services/dbService';
+import { saveLastWatched, getLastWatched, getCompletedChapters, markChapterCompleteDB, getChapterVideosDB } from '../services/dbService';
 import { useAppContext } from '../contexts/AppContext';
 
 interface AiQuizQuestion {
@@ -78,6 +78,7 @@ export const CurriculumView: React.FC = () => {
     
     // --- VIDEO STATE ---
     const [currentVideoId, setCurrentVideoId] = useState<string | null>(null);
+    const [customVideos, setCustomVideos] = useState<any[]>([]);
 
     // --- QUIZ STATE ---
     const [quizMode, setQuizMode] = useState(false);
@@ -90,12 +91,52 @@ export const CurriculumView: React.FC = () => {
     const t = translations[lang];
     const classes = [6, 7, 8, 9, 10];
 
-    // 1. Initial Load: Check for Resume Flag & Load Cloud Progress
+    // Helper to resolve custom or default videos for a chapter
+    const resolveChapterVideos = (chapterTitle: string, subject: string, classLevel: number) => {
+        const custom = customVideos.find((v: any) => 
+            v.class_level === classLevel && 
+            v.subject.toLowerCase() === subject.toLowerCase() && 
+            v.chapter.toLowerCase() === chapterTitle.toLowerCase()
+        );
+
+        const defaultVideoId = CHAPTER_VIDEO_MAP[chapterTitle] || "OoO5d5P0Jn4";
+
+        return [
+            {
+                id: custom?.concept_video || defaultVideoId,
+                title: "Core Concepts Lecture",
+                type: "Concept" as const,
+                duration: "15:20"
+            },
+            {
+                id: custom?.animated_video || defaultVideoId,
+                title: "Visual & Animated Guide",
+                type: "Animated" as const,
+                duration: "08:45"
+            },
+            {
+                id: custom?.realworld_video || defaultVideoId,
+                title: "Real World Applications",
+                type: "RealWorld" as const,
+                duration: "12:10"
+            }
+        ];
+    };
+
+    // 1. Initial Load: Check for Resume Flag & Load Cloud Progress & Custom Videos
     useEffect(() => {
         const init = async () => {
             // Load Cloud Progress
             const completed = await getCompletedChapters();
             setCompletedChapters(completed);
+
+            // Load custom curriculum videos
+            try {
+                const list = await getChapterVideosDB();
+                setCustomVideos(list);
+            } catch (e) {
+                console.error("Failed to load custom videos", e);
+            }
 
             // Check for "Continue Learning" flag from Dashboard
             const resumeFlag = localStorage.getItem(`gyansetu_${userEmail}_resume_flag`);
@@ -127,13 +168,13 @@ export const CurriculumView: React.FC = () => {
             // Save to Cloud
             saveLastWatched(history);
             
-            // Reset video to first option
-            const content = getChapterContent(selectedChapter, selectedSubject);
-            if (content.videos.length > 0) {
-                setCurrentVideoId(content.videos[0].id);
+            // Reset video to first option (dynamic custom or default fallback)
+            const resolved = resolveChapterVideos(selectedChapter, selectedSubject, selectedClass);
+            if (resolved.length > 0) {
+                setCurrentVideoId(resolved[0].id);
             }
         }
-    }, [selectedClass, selectedSubject, selectedChapter]);
+    }, [selectedClass, selectedSubject, selectedChapter, customVideos]);
 
     const handleBack = () => {
         if (quizMode) {
@@ -234,6 +275,10 @@ export const CurriculumView: React.FC = () => {
     const activeContent = selectedChapter && selectedSubject 
         ? getChapterContent(selectedChapter, selectedSubject) 
         : null;
+
+    const resolvedVideos = selectedChapter && selectedSubject && selectedClass
+        ? resolveChapterVideos(selectedChapter, selectedSubject, selectedClass)
+        : [];
 
     const isCompleted = selectedChapter && completedChapters.includes(selectedChapter);
 
@@ -445,7 +490,7 @@ export const CurriculumView: React.FC = () => {
                                     ${isDark ? 'border-f-neon shadow-[0_0_20px_rgba(0,240,255,0.2)] bg-black' : 'border-h-accent shadow-xl bg-h-ink'}`}>
                                     <iframe 
                                         className="w-full h-full"
-                                        src={`https://www.youtube.com/embed/${currentVideoId || activeContent.videos[0].id}`} 
+                                        src={`https://www.youtube.com/embed/${currentVideoId || resolvedVideos[0]?.id}`} 
                                         title="YouTube video player" 
                                         frameBorder="0" 
                                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
@@ -484,7 +529,7 @@ export const CurriculumView: React.FC = () => {
                             <div className={`md:col-span-1 p-3 rounded-2xl overflow-y-auto ${isDark ? 'glass-panel' : 'paper-panel'}`}>
                                 <h4 className="text-xs font-bold uppercase tracking-widest opacity-60 mb-3">Video Sources</h4>
                                 <div className="space-y-2">
-                                    {activeContent.videos.map((vid) => (
+                                    {resolvedVideos.map((vid) => (
                                         <button
                                             key={vid.id}
                                             onClick={() => setCurrentVideoId(vid.id)}

@@ -73,3 +73,16 @@ class QuizSubmission(database.Base):
     # Relationships
     student = relationship("User", back_populates="quiz_submissions")
     quiz = relationship("Quiz", back_populates="submissions")
+
+
+class ChapterVideo(database.Base):
+    __tablename__ = "chapter_videos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    class_level = Column(Integer, index=True)
+    subject = Column(String, index=True)
+    chapter = Column(String, index=True)
+    concept_video = Column(String, nullable=True)
+    animated_video = Column(String, nullable=True)
+    realworld_video = Column(String, nullable=True)
+
