@@ -6,7 +6,7 @@ import { LanguageToggle } from '../components/LanguageToggle';
 import { translations } from '../utils/translations';
 import { apiRequest } from '../services/api';
 import { auth, googleProvider, FIREBASE_CONFIGURED } from '../firebase';
-import { signInWithPopup } from 'firebase/auth';
+import { signInWithPopup, sendPasswordResetEmail } from 'firebase/auth';
 import { useAppContext } from '../contexts/AppContext';
 
 interface AuthSystemProps {
@@ -27,6 +27,8 @@ export const AuthSystem: React.FC<AuthSystemProps> = ({ onAuth, onBack }) => {
     // Status State
     const [error, setError] = useState<string | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [isForgotPassword, setIsForgotPassword] = useState(false);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
     const t = translations[language];
 
@@ -103,6 +105,30 @@ export const AuthSystem: React.FC<AuthSystemProps> = ({ onAuth, onBack }) => {
         }
     };
 
+    const handleForgotPassword = async () => {
+        setError(null);
+        setSuccessMessage(null);
+        if (!email) {
+            setError("Please enter your email address.");
+            return;
+        }
+        setIsProcessing(true);
+        try {
+            if (FIREBASE_CONFIGURED && auth) {
+                await sendPasswordResetEmail(auth, email);
+                setSuccessMessage("A password reset link has been sent to your email!");
+            } else {
+                // Graceful fallback simulation
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                setSuccessMessage("A password reset link has been sent to your email! (Demo Mode)");
+            }
+            setIsProcessing(false);
+        } catch (err: any) {
+            setIsProcessing(false);
+            setError(err.message || "Failed to send password reset email. Please verify your email address.");
+        }
+    };
+
     const resetFlow = () => {
         setIsLogin(!isLogin);
         setError(null);
@@ -165,18 +191,22 @@ export const AuthSystem: React.FC<AuthSystemProps> = ({ onAuth, onBack }) => {
                 {isProcessing && (
                     <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm animate-fade">
                         <iconify-icon icon="solar:shield-check-bold" className={`text-6xl mb-4 animate-bounce ${isDark ? 'text-f-neon' : 'text-h-accent'}`}></iconify-icon>
-                        <h3 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-white'}`}>{isLogin ? 'Logging in...' : 'Creating account...'}</h3>
+                        <h3 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-white'}`}>
+                            {isForgotPassword ? 'Sending reset link...' : (isLogin ? 'Logging in...' : 'Creating account...')}
+                        </h3>
                     </div>
                 )}
 
                 <div className="mb-8 text-center">
                     <h2 className={`text-3xl md:text-4xl font-bold mb-2 ${isDark ? 'font-future text-f-neon' : 'font-heritage text-h-accent'}`}>
-                        {isLogin ? t.welcomeBack : t.joinBridge}
+                        {isForgotPassword ? (language === 'hi' ? 'पासवर्ड रीसेट करें' : 'Reset Password') : (isLogin ? t.welcomeBack : t.joinBridge)}
                     </h2>
-                    <p className="opacity-60 text-sm">{t.accessPortal}</p>
+                    <p className="opacity-60 text-sm">
+                        {isForgotPassword ? (language === 'hi' ? 'पासवर्ड रीसेट निर्देश प्राप्त करने के लिए अपना पंजीकृत ईमेल पता दर्ज करें' : 'Enter your registered email address to receive password reset instructions') : t.accessPortal}
+                    </p>
                 </div>
 
-                {!isLogin && (
+                {!isLogin && !isForgotPassword && (
                     <div className={`flex p-1.5 rounded-xl mb-8 transition-colors ${isDark ? 'bg-black/40' : 'bg-black/5'}`}>
                         <button
                             onClick={() => setRole('student')}
@@ -231,26 +261,28 @@ export const AuthSystem: React.FC<AuthSystemProps> = ({ onAuth, onBack }) => {
                             />
                         </div>
 
-                        <div className="group relative">
-                            <input
-                                type="password"
-                                placeholder={t.passPlaceholder}
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className={`w-full p-4 rounded-xl bg-transparent border-2 outline-none transition-all duration-300 
-                                    ${isDark
-                                        ? 'border-gray-800 focus:border-f-neon focus:bg-white/5 focus:shadow-[0_0_15px_rgba(0,240,255,0.1)] text-white placeholder-gray-600'
-                                        : 'border-gray-300 focus:border-h-accent focus:bg-white focus:shadow-md text-h-ink placeholder-gray-400'
-                                    } focus:scale-[1.02]`}
-                            />
-                            {isLogin && (
-                                <div className="flex justify-end mt-2">
-                                    <button className={`text-xs font-bold hover:underline opacity-60 hover:opacity-100 transition-opacity ${isDark ? 'text-f-neon' : 'text-h-accent'}`}>
-                                        {t.forgotPassword}
-                                    </button>
-                                </div>
-                            )}
-                        </div>
+                        {!isForgotPassword && (
+                            <div className="group relative">
+                                <input
+                                    type="password"
+                                    placeholder={t.passPlaceholder}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className={`w-full p-4 rounded-xl bg-transparent border-2 outline-none transition-all duration-300 
+                                        ${isDark
+                                            ? 'border-gray-800 focus:border-f-neon focus:bg-white/5 focus:shadow-[0_0_15px_rgba(0,240,255,0.1)] text-white placeholder-gray-600'
+                                            : 'border-gray-300 focus:border-h-accent focus:bg-white focus:shadow-md text-h-ink placeholder-gray-400'
+                                        } focus:scale-[1.02]`}
+                                />
+                                {isLogin && (
+                                    <div className="flex justify-end mt-2">
+                                        <button onClick={() => { setIsForgotPassword(true); setError(null); setSuccessMessage(null); }} className={`text-xs font-bold hover:underline opacity-60 hover:opacity-100 transition-opacity ${isDark ? 'text-f-neon' : 'text-h-accent'}`}>
+                                            {t.forgotPassword}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {error && (
@@ -260,53 +292,78 @@ export const AuthSystem: React.FC<AuthSystemProps> = ({ onAuth, onBack }) => {
                         </div>
                     )}
 
+                    {successMessage && (
+                        <div className="flex items-center gap-2 text-green-500 text-xs font-bold bg-green-500/10 p-3 rounded-xl border border-green-500/20 animate-fade">
+                            <iconify-icon icon="solar:check-circle-bold" className="text-lg"></iconify-icon>
+                            {successMessage}
+                        </div>
+                    )}
+
                     {/* Action Button */}
                     <button
-                        onClick={isLogin ? handleLogin : handleRegister}
+                        onClick={isForgotPassword ? handleForgotPassword : (isLogin ? handleLogin : handleRegister)}
                         disabled={isProcessing}
                         className={`w-full py-4 rounded-xl font-bold uppercase tracking-widest mt-4 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg disabled:opacity-50 disabled:cursor-wait
                         ${isDark ? 'bg-f-neon text-black shadow-f-neon/20 hover:shadow-f-neon/40' : 'bg-h-accent text-white hover:bg-h-accent/90'}`}
                     >
-                        {isLogin ? t.enterPortal : (isProcessing ? 'Creating Account...' : t.createAccount)}
+                        {isForgotPassword ? (language === 'hi' ? 'रीसेट लिंक भेजें' : 'Send Reset Link') : (isLogin ? t.enterPortal : (isProcessing ? 'Creating Account...' : t.createAccount))}
                     </button>
                 </div>
 
-                {/* ── Google Sign-In ── */}
-                <div className="mt-6">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className={`flex-1 h-px ${isDark ? 'bg-gray-700' : 'bg-gray-300'}`} />
-                        <span className="text-xs opacity-40 font-bold uppercase tracking-widest">or</span>
-                        <div className={`flex-1 h-px ${isDark ? 'bg-gray-700' : 'bg-gray-300'}`} />
+                {/* ── Google Sign-In (Removed for now as requested) ── */}
+                {!isForgotPassword && false && (
+                    <div className="mt-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className={`flex-1 h-px ${isDark ? 'bg-gray-700' : 'bg-gray-300'}`} />
+                            <span className="text-xs opacity-40 font-bold uppercase tracking-widest">or</span>
+                            <div className={`flex-1 h-px ${isDark ? 'bg-gray-700' : 'bg-gray-300'}`} />
+                        </div>
+                        <button
+                            onClick={handleGoogleSignIn}
+                            disabled={!FIREBASE_CONFIGURED || isProcessing}
+                            title={!FIREBASE_CONFIGURED ? "Google Sign-In is not configured" : ""}
+                            className={`w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-3 border transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed
+                                ${isDark
+                                    ? 'bg-white/5 border-gray-700 text-white hover:bg-white/10 hover:border-gray-600'
+                                    : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm hover:shadow-md'
+                                }`}
+                        >
+                            <svg width="18" height="18" viewBox="0 0 48 48">
+                                <path fill="#FFC107" d="M43.6 20H24v8h11.3C33.7 33.3 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1L37.5 9.5C34 6.3 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 19.6-7.9 19.6-20 0-1.3-.2-2.7-.4-4z" />
+                                <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 16 19 13 24 13c3.1 0 5.8 1.2 7.9 3.1L37.5 9.5C34 6.3 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
+                                <path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.9 13.4-5.1l-6.2-5.2C29.3 35.3 26.8 36 24 36c-5.2 0-9.7-3.4-11.3-8H6.3C9.7 35.7 16.3 44 24 44z" />
+                                <path fill="#1976D2" d="M43.6 20H24v8h11.3c-.8 2.3-2.2 4.2-4.1 5.6l6.2 5.2C40.9 35.6 44 30.3 44 24c0-1.3-.2-2.7-.4-4z" />
+                            </svg>
+                            Continue with Google
+                        </button>
                     </div>
-                    <button
-                        onClick={handleGoogleSignIn}
-                        disabled={!FIREBASE_CONFIGURED || isProcessing}
-                        title={!FIREBASE_CONFIGURED ? "Google Sign-In is not configured" : ""}
-                        className={`w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-3 border transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed
-                            ${isDark
-                                ? 'bg-white/5 border-gray-700 text-white hover:bg-white/10 hover:border-gray-600'
-                                : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm hover:shadow-md'
-                            }`}
-                    >
-                        <svg width="18" height="18" viewBox="0 0 48 48">
-                            <path fill="#FFC107" d="M43.6 20H24v8h11.3C33.7 33.3 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1L37.5 9.5C34 6.3 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 19.6-7.9 19.6-20 0-1.3-.2-2.7-.4-4z" />
-                            <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 16 19 13 24 13c3.1 0 5.8 1.2 7.9 3.1L37.5 9.5C34 6.3 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
-                            <path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.9 13.4-5.1l-6.2-5.2C29.3 35.3 26.8 36 24 36c-5.2 0-9.7-3.4-11.3-8H6.3C9.7 35.7 16.3 44 24 44z" />
-                            <path fill="#1976D2" d="M43.6 20H24v8h11.3c-.8 2.3-2.2 4.2-4.1 5.6l6.2 5.2C40.9 35.6 44 30.3 44 24c0-1.3-.2-2.7-.4-4z" />
-                        </svg>
-                        Continue with Google
-                    </button>
-                </div>
+                )}
 
-                <p className="text-center mt-6 text-xs opacity-60">
-                    {isLogin ? t.noAccount : t.hasAccount}
-                    <button
-                        onClick={resetFlow}
-                        className={`ml-2 font-bold underline transition-colors hover:scale-105 inline-block ${isDark ? 'text-f-neon hover:text-white' : 'text-h-accent hover:text-black'}`}
-                    >
-                        {isLogin ? t.signUp : t.login}
-                    </button>
-                </p>
+                {!isForgotPassword ? (
+                    <p className="text-center mt-6 text-xs opacity-60">
+                        {isLogin ? t.noAccount : t.hasAccount}
+                        <button
+                            onClick={resetFlow}
+                            className={`ml-2 font-bold underline transition-colors hover:scale-105 inline-block ${isDark ? 'text-f-neon hover:text-white' : 'text-h-accent hover:text-black'}`}
+                        >
+                            {isLogin ? t.signUp : t.login}
+                        </button>
+                    </p>
+                ) : (
+                    <p className="text-center mt-6 text-xs opacity-60 animate-fade">
+                        {language === 'hi' ? 'याद आ गया?' : 'Remembered your password?'}
+                        <button
+                            onClick={() => {
+                                setIsForgotPassword(false);
+                                setError(null);
+                                setSuccessMessage(null);
+                            }}
+                            className={`ml-2 font-bold underline transition-colors hover:scale-105 inline-block ${isDark ? 'text-f-neon hover:text-white' : 'text-h-accent hover:text-black'}`}
+                        >
+                            {t.login}
+                        </button>
+                    </p>
+                )}
             </div>
         </div>
     );

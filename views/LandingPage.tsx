@@ -33,11 +33,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                     <p className="text-sm md:text-lg opacity-70 max-w-2xl mx-auto mb-8 md:mb-10 leading-relaxed">{t.heroDesc}</p>
                     <div className="flex flex-col md:flex-row gap-4 justify-center px-4">
                         <button onClick={onStart} className={`w-full md:w-auto px-8 py-4 rounded-xl font-bold uppercase tracking-widest transition-transform hover:scale-105 shadow-xl ${isDark ? 'bg-f-neon text-black shadow-f-neon/20' : 'bg-h-accent text-white'}`}>{t.getStarted}</button>
-                        <button className="w-full md:w-auto px-8 py-4 rounded-xl font-bold uppercase tracking-widest border border-gray-500 opacity-60 hover:opacity-100 transition-all">{t.ourMission}</button>
+                        <button onClick={() => document.getElementById('mission-section')?.scrollIntoView({ behavior: 'smooth' })} className="w-full md:w-auto px-8 py-4 rounded-xl font-bold uppercase tracking-widest border border-gray-500 opacity-60 hover:opacity-100 transition-all">{t.ourMission}</button>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mt-20 md:mt-32 max-w-4xl w-full z-10">
+                <div id="mission-section" className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mt-20 md:mt-32 max-w-4xl w-full z-10">
                     {[
                         { title: t.features.ai, icon: "solar:magic-stick-3-bold", desc: t.features.aiDesc },
                         { title: t.features.labs, icon: "solar:atom-bold", desc: t.features.labsDesc }
