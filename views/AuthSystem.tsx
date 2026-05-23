@@ -147,10 +147,12 @@ export const AuthSystem: React.FC<AuthSystemProps> = ({ onAuth, onBack }) => {
             const result = await signInWithPopup(auth, googleProvider);
             const user = result.user;
 
-            // Send Firebase-verified user info to our FastAPI backend
+            // Get Firebase ID token for server-side verification
+            const idToken = await user.getIdToken();
+
+            // Send verified token to our FastAPI backend
             const response = await apiRequest('/auth/google', 'POST', {
-                email: user.email,
-                full_name: user.displayName || user.email?.split('@')[0] || '',
+                id_token: idToken,
                 role,
                 institution: institution || '',
             });

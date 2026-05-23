@@ -24,10 +24,9 @@ class RefreshRequest(BaseModel):
     refresh_token: str
 
 class GoogleAuthRequest(BaseModel):
-    """Phase 2: Accepts Firebase-authenticated user email + desired role.
-    Firebase verifies identity client-side; backend creates/finds the DB user and returns JWT."""
-    email: str = Field(..., min_length=3, max_length=200)
-    full_name: str = Field("", max_length=100)
+    """Phase 2: Accepts Firebase ID token for server-side verification.
+    Backend verifies the token with Firebase Admin SDK, extracts the email, and returns JWT."""
+    id_token: str = Field(..., min_length=10)
     role: str = Field("student", pattern="^(student|teacher)$")
     institution: Optional[str] = Field(None, max_length=200)
 

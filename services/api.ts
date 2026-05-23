@@ -6,13 +6,9 @@
 const USE_MOCK_BACKEND = false;
 
 // --- CONFIGURATION FOR DEPLOYMENT ---
-// Set VITE_API_URL in Vercel Dashboard → Environment Variables
+// Set VITE_API_URL in Netlify Dashboard → Environment Variables
 // For local dev: set VITE_API_URL=http://localhost:8000 in .env.local
-const API_URL = import.meta.env.VITE_API_URL || (
-    typeof window !== 'undefined' && !window.location.hostname.includes('localhost')
-        ? "https://gyansetu-2--amitkasganj4.replit.app"
-        : "http://localhost:8000"
-);
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 
 // --- MOCK BACKEND IMPLEMENTATION (Simulation) ---

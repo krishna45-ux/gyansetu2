@@ -4,12 +4,6 @@
 import { apiRequest } from "./api";
 import { UserProfile, ClassResource, StudentPerformance, Quiz, QuizQuestion } from "../types";
 
-const API_URL = import.meta.env.VITE_API_URL || (
-    typeof window !== 'undefined' && !window.location.hostname.includes('localhost')
-        ? "https://gyansetu-2--amitkasganj4.replit.app"
-        : "http://localhost:8000"
-);
-
 // --- USER FUNCTIONS ---
 
 export const getUserProfile = async (): Promise<UserProfile | null> => {

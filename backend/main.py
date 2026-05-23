@@ -82,6 +82,22 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # ─────────────────────────────────────────────
+# SECURITY HEADERS MIDDLEWARE
+# ─────────────────────────────────────────────
+from starlette.middleware.base import BaseHTTPMiddleware
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        return response
+
+app.add_middleware(SecurityHeadersMiddleware)
+
+# ─────────────────────────────────────────────
 # CORS
 # ─────────────────────────────────────────────
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "")
@@ -99,8 +115,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 # ─────────────────────────────────────────────
@@ -198,12 +214,18 @@ def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db
 @limiter.limit("10/minute")
 def google_auth(request: Request, body: schemas.GoogleAuthRequest, db: Session = Depends(database.get_db)):
     """
-    Phase 2: Google OAuth via Firebase (client-side verified).
-    Frontend sends the authenticated user's email + display name.
-    Backend creates the user in DB if new, returns JWT tokens.
+    Phase 2: Google OAuth via Firebase — SERVER-SIDE TOKEN VERIFICATION.
+    Frontend sends the Firebase ID token. Backend verifies it with Firebase Admin SDK.
     """
-    google_email = body.email.strip().lower()
-    google_name = body.full_name or google_email.split("@")[0]
+    if not firebase_app:
+        raise HTTPException(status_code=503, detail="Google OAuth is not configured on this server")
+
+    try:
+        decoded_token = firebase_auth.verify_id_token(body.id_token)
+        google_email = decoded_token.get("email", "").strip().lower()
+        google_name = decoded_token.get("name", google_email.split("@")[0])
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid or expired Google authentication token")
 
     if not google_email:
         raise HTTPException(status_code=400, detail="Google account has no email address")
@@ -283,7 +305,9 @@ def read_users_me(current_user: models.User = Depends(get_current_user)):
 # ─────────────────────────────────────────────
 
 @app.put("/users/profile")
+@limiter.limit("20/minute")
 def update_profile(
+    request: Request,
     data: schemas.ProfileUpdate,
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(database.get_db)
@@ -301,7 +325,9 @@ def update_profile(
 
 
 @app.put("/users/career-goal")
+@limiter.limit("20/minute")
 def update_career_goal(
+    request: Request,
     data: schemas.CareerGoalUpdate,
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(database.get_db)
@@ -337,7 +363,9 @@ def get_resources(skip: int = 0, limit: int = 20, db: Session = Depends(database
 
 
 @app.post("/resources", status_code=201)
+@limiter.limit("20/minute")
 def create_resource(
+    request: Request,
     res: schemas.ResourceCreate,
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(database.get_db)
@@ -362,17 +390,33 @@ def create_resource(
 
 
 @app.post("/resources/upload", response_model=schemas.UploadResponse)
+@limiter.limit("10/minute")
 async def upload_resource_file(
+    request: Request,
     file: UploadFile = File(...),
     current_user: models.User = Depends(get_current_user)
 ):
     """
     Phase 2: Upload a file (PDF, image, doc) to Cloudinary.
     Returns the secure URL to store alongside the resource.
-    Teacher-only.
+    Teacher-only. Includes MIME type validation.
     """
     if current_user.role != "teacher":
         raise HTTPException(status_code=403, detail="Only teachers can upload files")
+
+    # Validate MIME type to prevent malicious file uploads
+    ALLOWED_MIME_TYPES = {
+        "application/pdf",
+        "image/png",
+        "image/jpeg",
+        "image/gif",
+        "image/webp"
+    }
+    if file.content_type not in ALLOWED_MIME_TYPES:
+        raise HTTPException(
+            status_code=415,
+            detail="File type not allowed. Only PDFs, PNGs, JPEGs, GIFs, and WEBP images are supported."
+        )
 
     # Validate file size (10 MB max)
     MAX_SIZE = 10 * 1024 * 1024
@@ -395,19 +439,28 @@ async def upload_resource_file(
             "resource_type": result["resource_type"],
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+        # Avoid leaking raw exception details to the client
+        print(f"[ERROR] Cloudinary upload failed: {e}")
+        raise HTTPException(status_code=500, detail="File upload failed due to a server-side error.")
 
 
 @app.delete("/resources/{resource_id}")
+@limiter.limit("20/minute")
 def delete_resource(
+    request: Request,
     resource_id: int,
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(database.get_db)
 ):
     if current_user.role != "teacher":
         raise HTTPException(status_code=403, detail="Only teachers can delete resources")
+    
     res = db.query(models.Resource).filter(models.Resource.id == resource_id).first()
     if res:
+        # Authorization check: teachers can only delete their own resources
+        if res.author_name != current_user.full_name:
+            raise HTTPException(status_code=403, detail="You are not authorized to delete this resource")
+        
         db.delete(res)
         db.commit()
     return {"message": "Deleted"}
@@ -427,7 +480,10 @@ def search(q: str, skip: int = 0, limit: int = 10, db: Session = Depends(databas
     if limit > 50:
         limit = 50
 
-    term = f"%{q.strip()}%"
+    # Sanitize search term to prevent wildcard manipulation causing high CPU/DB load
+    import re
+    safe_q = re.sub(r'[%_]', '', q.strip())
+    term = f"%{safe_q}%"
 
     matching_resources = (
         db.query(models.Resource)
@@ -492,7 +548,9 @@ def get_quizzes(skip: int = 0, limit: int = 20, db: Session = Depends(database.g
 
 
 @app.post("/quizzes", status_code=201)
+@limiter.limit("20/minute")
 def create_quiz(
+    request: Request,
     quiz_data: schemas.QuizCreate,
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(database.get_db)
@@ -560,7 +618,9 @@ def get_progress(current_user: models.User = Depends(get_current_user)):
 
 
 @app.post("/progress/update-last-watched")
+@limiter.limit("30/minute")
 def update_last_watched(
+    request: Request,
     data: schemas.LastWatchedUpdate,
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(database.get_db)
@@ -624,12 +684,17 @@ def get_students(
 
 
 @app.get("/chapter-videos", response_model=List[schemas.ChapterVideoResponse])
-def get_all_chapter_videos(db: Session = Depends(database.get_db)):
+def get_all_chapter_videos(
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(database.get_db)
+):
     return db.query(models.ChapterVideo).all()
 
 
 @app.post("/chapter-videos", response_model=schemas.ChapterVideoResponse)
+@limiter.limit("20/minute")
 def update_chapter_videos(
+    request: Request,
     video_data: schemas.ChapterVideoCreate,
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(database.get_db)
