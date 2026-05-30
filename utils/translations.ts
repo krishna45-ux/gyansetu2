@@ -1,7 +1,7 @@
 export const translations = {
     en: {
         // General
-        appTitle: "GYANSETU",
+        appTitle: "GYAANSEETU",
         systemPast: "System: Past",
         systemFuture: "System: Future",
         login: "Login",
@@ -167,7 +167,7 @@ export const translations = {
     },
     hi: {
         // General
-        appTitle: "ज्ञानसेतु",
+        appTitle: "ज्ञानसीतु",
         systemPast: "प्रणाली: अतीत",
         systemFuture: "प्रणाली: भविष्य",
         login: "लॉगिन",

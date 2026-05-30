@@ -57,8 +57,8 @@ export const AuthSystem: React.FC<AuthSystemProps> = ({ onAuth, onBack }) => {
             loginData.append('username', email);
             loginData.append('password', password);
             const response = await apiRequest('/auth/login', 'POST', loginData, true);
-            localStorage.setItem('gyansetu_token', response.access_token);
-            if (response.refresh_token) localStorage.setItem('gyansetu_refresh_token', response.refresh_token);
+            localStorage.setItem('gyaanseetu_token', response.access_token);
+            if (response.refresh_token) localStorage.setItem('gyaanseetu_refresh_token', response.refresh_token);
 
             setIsProcessing(false);
             onAuth(role, email);
@@ -87,7 +87,7 @@ export const AuthSystem: React.FC<AuthSystemProps> = ({ onAuth, onBack }) => {
 
             if (response.access_token) {
                 // Store JWT
-                localStorage.setItem('gyansetu_token', response.access_token);
+                localStorage.setItem('gyaanseetu_token', response.access_token);
 
                 // Fetch User Details to get Role
                 const profile = await apiRequest('/auth/me', 'GET');
@@ -147,17 +147,19 @@ export const AuthSystem: React.FC<AuthSystemProps> = ({ onAuth, onBack }) => {
             const result = await signInWithPopup(auth, googleProvider);
             const user = result.user;
 
-            // Send Firebase-verified user info to our FastAPI backend
+            // Get Firebase ID token for server-side verification
+            const idToken = await user.getIdToken();
+
+            // Send verified token to our FastAPI backend
             const response = await apiRequest('/auth/google', 'POST', {
-                email: user.email,
-                full_name: user.displayName || user.email?.split('@')[0] || '',
+                id_token: idToken,
                 role,
                 institution: institution || '',
             });
 
-            localStorage.setItem('gyansetu_token', response.access_token);
+            localStorage.setItem('gyaanseetu_token', response.access_token);
             if (response.refresh_token) {
-                localStorage.setItem('gyansetu_refresh_token', response.refresh_token);
+                localStorage.setItem('gyaanseetu_refresh_token', response.refresh_token);
             }
 
             // Fetch profile to get confirmed role

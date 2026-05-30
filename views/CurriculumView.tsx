@@ -139,7 +139,7 @@ export const CurriculumView: React.FC = () => {
             }
 
             // Check for "Continue Learning" flag from Dashboard
-            const resumeFlag = localStorage.getItem(`gyansetu_${userEmail}_resume_flag`);
+            const resumeFlag = localStorage.getItem(`gyaanseetu_${userEmail}_resume_flag`);
             
             if (resumeFlag === 'true') {
                 // If resuming, trust the cloud 'last_watched' data
@@ -149,7 +149,7 @@ export const CurriculumView: React.FC = () => {
                     setSelectedSubject(lastWatched.subject);
                     setSelectedChapter(lastWatched.chapter);
                 }
-                localStorage.removeItem(`gyansetu_${userEmail}_resume_flag`);
+                localStorage.removeItem(`gyaanseetu_${userEmail}_resume_flag`);
             }
         };
         init();

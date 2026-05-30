@@ -33,6 +33,10 @@ backend/.env
 # Firebase service account
 backend/serviceAccountKey.json
 
+# Database files
+*.db
+backend/sql_app.db
+
 # Python
 __pycache__/
 *.pyc

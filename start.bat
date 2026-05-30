@@ -1,6 +1,6 @@
 @echo off
 echo ==========================================
-echo        Starting GyanSetu Application
+echo        Starting GyaanSeetu Application
 echo ==========================================
 
 echo.
@@ -10,7 +10,7 @@ pip install -r requirements.txt
 
 echo.
 echo [2/4] Starting FastAPI Backend...
-start cmd /k "title GyanSetu Backend && uvicorn main:app --host 0.0.0.0 --port 8000"
+start cmd /k "title GyaanSeetu Backend && uvicorn main:app --host 0.0.0.0 --port 8000"
 
 cd ..
 
@@ -20,11 +20,11 @@ call npm install
 
 echo.
 echo [4/4] Starting React/Vite Frontend...
-start cmd /k "title GyanSetu Frontend && npm run dev"
+start cmd /k "title GyaanSeetu Frontend && npm run dev"
 
 echo.
 echo ==========================================
-echo GyanSetu is starting!
+echo GyaanSeetu is starting!
 echo Two new command prompt windows have been opened for the frontend and backend.
 echo You can close this window now.
 echo ==========================================

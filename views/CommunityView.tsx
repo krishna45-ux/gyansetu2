@@ -76,8 +76,8 @@ const INITIAL_QUESTIONS: Question[] = [
     }
 ];
 
-const STORAGE_KEY = 'gyansetu_community_data';
-const PROFILE_KEY = 'gyansetu_profile';
+const STORAGE_KEY = 'gyaanseetu_community_data';
+const PROFILE_KEY = 'gyaanseetu_profile';
 
 export const CommunityView: React.FC = () => {
     const { isDark, userRole, language } = useAppContext();

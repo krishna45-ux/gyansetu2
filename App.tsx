@@ -17,32 +17,57 @@ import { apiRequest } from './services/api';
 import { SearchBar } from './components/SearchBar';
 import { AppProvider } from './contexts/AppContext';
 
+// Migrate legacy local storage keys
+(() => {
+    try {
+        const keysToMigrate: { oldKey: string; newKey: string }[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith('gyansetu_')) {
+                keysToMigrate.push({
+                    oldKey: key,
+                    newKey: key.replace('gyansetu_', 'gyaanseetu_')
+                });
+            }
+        }
+        keysToMigrate.forEach(({ oldKey, newKey }) => {
+            const val = localStorage.getItem(oldKey);
+            if (val !== null) {
+                localStorage.setItem(newKey, val);
+                localStorage.removeItem(oldKey);
+            }
+        });
+    } catch (e) {
+        console.warn("LocalStorage migration failed:", e);
+    }
+})();
+
 const App: React.FC = () => {
     // Initial State Logic
     const [isDark, setIsDark] = useState<boolean>(() => {
-        const savedTheme = localStorage.getItem('gyansetu_theme');
+        const savedTheme = localStorage.getItem('gyaanseetu_theme');
         return savedTheme ? savedTheme === 'dark' : true;
     });
 
     const [language, setLanguage] = useState<Language>(() => {
-        const savedLang = localStorage.getItem('gyansetu_lang');
+        const savedLang = localStorage.getItem('gyaanseetu_lang');
         return (savedLang === 'hi' ? 'hi' : 'en') as Language;
     });
 
     // Authentication State
     const [userRole, setUserRole] = useState<Role | null>(() => {
-        return localStorage.getItem('gyansetu_role') as Role | null;
+        return localStorage.getItem('gyaanseetu_role') as Role | null;
     });
 
     // CURRENT USER EMAIL - This is the key to user-specific data
     const [userEmail, setUserEmail] = useState<string | null>(() => {
-        return localStorage.getItem('gyansetu_current_email');
+        return localStorage.getItem('gyaanseetu_current_email');
     });
 
     // Determine initial view based on authentication
     const [view, setView] = useState<ViewState>(() => {
-        const savedRole = localStorage.getItem('gyansetu_role');
-        const savedEmail = localStorage.getItem('gyansetu_current_email');
+        const savedRole = localStorage.getItem('gyaanseetu_role');
+        const savedEmail = localStorage.getItem('gyaanseetu_current_email');
         if (savedRole && savedEmail) {
             return savedRole === 'student' ? 'student_dashboard' : 'teacher_dashboard';
         }
@@ -53,22 +78,22 @@ const App: React.FC = () => {
     useEffect(() => {
         if (isDark) {
             document.documentElement.classList.add('dark');
-            localStorage.setItem('gyansetu_theme', 'dark');
+            localStorage.setItem('gyaanseetu_theme', 'dark');
         } else {
             document.documentElement.classList.remove('dark');
-            localStorage.setItem('gyansetu_theme', 'light');
+            localStorage.setItem('gyaanseetu_theme', 'light');
         }
     }, [isDark]);
 
     // Language Effect
     useEffect(() => {
-        localStorage.setItem('gyansetu_lang', language);
+        localStorage.setItem('gyaanseetu_lang', language);
     }, [language]);
 
     // --- SESSION CHECK & CROSS-TAB LOGOUT ---
     useEffect(() => {
         const checkSession = async () => {
-            const token = localStorage.getItem('gyansetu_token');
+            const token = localStorage.getItem('gyaanseetu_token');
             if (token) {
                 if (import.meta.env.DEV) console.log("Found session token, verifying...");
                 try {
@@ -87,7 +112,7 @@ const App: React.FC = () => {
 
         // Listen for logouts from other tabs
         const handleStorageChange = (e: StorageEvent) => {
-            if (e.key === 'gyansetu_token' && !e.newValue) {
+            if (e.key === 'gyaanseetu_token' && !e.newValue) {
                 logout();
             }
         };
@@ -97,18 +122,18 @@ const App: React.FC = () => {
 
     // Role Logic
     const handleAuth = (role: Role, email: string) => {
-        localStorage.setItem('gyansetu_role', role);
-        localStorage.setItem('gyansetu_current_email', email); // Persist session
+        localStorage.setItem('gyaanseetu_role', role);
+        localStorage.setItem('gyaanseetu_current_email', email); // Persist session
         setUserRole(role);
         setUserEmail(email);
         setView(role === 'student' ? 'student_dashboard' : 'teacher_dashboard');
     };
 
     const logout = () => {
-        localStorage.removeItem('gyansetu_role');
-        localStorage.removeItem('gyansetu_current_email');
-        localStorage.removeItem('gyansetu_token');
-        localStorage.removeItem('gyansetu_refresh_token');  // Phase 1: clear refresh token
+        localStorage.removeItem('gyaanseetu_role');
+        localStorage.removeItem('gyaanseetu_current_email');
+        localStorage.removeItem('gyaanseetu_token');
+        localStorage.removeItem('gyaanseetu_refresh_token');  // Phase 1: clear refresh token
         setUserRole(null);
         setUserEmail(null);
         setView('landing');
@@ -164,7 +189,7 @@ const App: React.FC = () => {
             <aside className={`hidden md:flex w-20 lg:w-64 border-r flex-col transition-all duration-300 z-50 ${isDark ? 'border-gray-800 bg-f-base/90' : 'border-h-accent/20 bg-h-base'}`}>
                 <div className="h-20 flex items-center justify-center lg:justify-start lg:px-6 gap-3 border-b border-opacity-10 border-gray-500">
                     <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl font-bold ${isDark ? 'bg-f-neon text-black shadow-[0_0_15px_#00F0FF]' : 'bg-h-accent text-white shadow-md'}`}>G</div>
-                    <h1 className={`hidden lg:block text-sm font-bold tracking-widest ${isDark ? 'font-future text-f-neon' : 'font-heritage text-h-accent'}`}>GYANSETU</h1>
+                    <h1 className={`hidden lg:block text-sm font-bold tracking-widest ${isDark ? 'font-future text-f-neon' : 'font-heritage text-h-accent'}`}>GYAANSEETU</h1>
                 </div>
                 <nav className="flex-1 py-8 px-3 space-y-2">
                     {navItems.map(item => (

@@ -115,7 +115,7 @@ export const StudentDashboard: React.FC = () => {
     const handleContinueLearning = () => {
         // We still use localStorage for simple navigation flags between views
         if (lastWatched) {
-            localStorage.setItem(`gyansetu_${userEmail}_resume_flag`, 'true');
+            localStorage.setItem(`gyaanseetu_${userEmail}_resume_flag`, 'true');
         }
         if (onNavigate) {
             onNavigate('curriculum');

@@ -4,12 +4,6 @@
 import { apiRequest } from "./api";
 import { UserProfile, ClassResource, StudentPerformance, Quiz, QuizQuestion } from "../types";
 
-const API_URL = import.meta.env.VITE_API_URL || (
-    typeof window !== 'undefined' && !window.location.hostname.includes('localhost')
-        ? "https://gyansetu-2--amitkasganj4.replit.app"
-        : "http://localhost:8000"
-);
-
 // --- USER FUNCTIONS ---
 
 export const getUserProfile = async (): Promise<UserProfile | null> => {
@@ -105,7 +99,7 @@ export const uploadResourceFile = async (file: File): Promise<{ url: string; fil
     const formData = new FormData();
     formData.append('file', file);
 
-    const token = localStorage.getItem('gyansetu_token');
+    const token = localStorage.getItem('gyaanseetu_token');
     const response = await fetch(
         `${API_URL}/resources/upload`,
         {

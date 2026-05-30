@@ -116,7 +116,7 @@ export const CareerPathView: React.FC = () => {
 
     const handleChapterClick = (node: { class: number; subject: string; chapter: string }) => {
         // Set Resume Flag locally (navigation logic) but save state to cloud
-        localStorage.setItem(`gyansetu_${userEmail}_resume_flag`, 'true');
+        localStorage.setItem(`gyaanseetu_${userEmail}_resume_flag`, 'true');
         
         const history = {
             classLevel: node.class,

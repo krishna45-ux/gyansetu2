@@ -1,6 +1,6 @@
-# GyanSetu — Complete Project Analysis Report
+# GyaanSeetu — Complete Project Analysis Report
 
-> **ज्ञानसेतु** (Knowledge Bridge) — An AI-powered personalized learning ecosystem bridging ancient wisdom with future technology.
+> **ज्ञानसीतु** (Knowledge Bridge) — An AI-powered personalized learning ecosystem bridging ancient wisdom with future technology.
 
 ---
 
@@ -24,7 +24,7 @@
 
 ## 1. Executive Summary
 
-**GyanSetu** is a full-stack educational platform built for a hackathon, targeting CBSE/NCERT Class 6–10 students and their teachers. It combines:
+**GyaanSeetu** is a full-stack educational platform built for a hackathon, targeting CBSE/NCERT Class 6–10 students and their teachers. It combines:
 
 - **Role-based access** (Student / Teacher) with distinct dashboards
 - **AI mentorship** via Google Gemini (motivational messages, quiz generation, answer grading, roleplay scenarios)
@@ -415,7 +415,7 @@ Refresh:      POST /auth/refresh  → verify refresh token → issue new access 
 ### JWT Configuration
 - **Access Token**: 30-minute expiry, HS256 algorithm
 - **Refresh Token**: 7-day expiry, separate secret key
-- **Storage**: `localStorage` (`gyansetu_token`, `gyansetu_refresh_token`)
+- **Storage**: `localStorage` (`gyaanseetu_token`, `gyaanseetu_refresh_token`)
 - **Auto-refresh**: `apiRequest()` intercepts `401` → calls `/auth/refresh` → retries
 
 ### Security Measures
@@ -589,7 +589,7 @@ class QuizScore:
 ```yaml
 services:
   - type: web
-    name: gyansetu-api
+    name: gyaanseetu-api
     runtime: python
     rootDir: backend
     buildCommand: pip install -r requirements.txt
@@ -599,14 +599,14 @@ services:
         generateValue: true
       - key: DATABASE_URL
         fromDatabase:
-          name: gyansetu-db
+          name: gyaanseetu-db
           property: connectionString
       - key: FRONTEND_URL
-        value: https://gyansetu.vercel.app
+        value: https://gyaanseetu.vercel.app
 
 databases:
-  - name: gyansetu-db
-    databaseName: gyansetu
+  - name: gyaanseetu-db
+    databaseName: gyaanseetu
     plan: free
 ```
 

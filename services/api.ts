@@ -6,13 +6,9 @@
 const USE_MOCK_BACKEND = false;
 
 // --- CONFIGURATION FOR DEPLOYMENT ---
-// Set VITE_API_URL in Vercel Dashboard → Environment Variables
+// Set VITE_API_URL in Netlify Dashboard → Environment Variables
 // For local dev: set VITE_API_URL=http://localhost:8000 in .env.local
-const API_URL = import.meta.env.VITE_API_URL || (
-    typeof window !== 'undefined' && !window.location.hostname.includes('localhost')
-        ? "https://gyansetu-2--amitkasganj4.replit.app"
-        : "http://localhost:8000"
-);
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 
 // --- MOCK BACKEND IMPLEMENTATION (Simulation) ---
@@ -22,11 +18,11 @@ const mockBackend = async (endpoint: string, method: string, body: any, isFormDa
     console.log(`[MockAPI] ${method} ${endpoint}`, body);
 
     // --- Database Helpers (LocalStorage) ---
-    const getDBUsers = () => JSON.parse(localStorage.getItem('gyansetu_db_users') || '[]');
+    const getDBUsers = () => JSON.parse(localStorage.getItem('gyaanseetu_db_users') || '[]');
     const saveDBUser = (user: any) => {
         const users = getDBUsers();
         users.push(user);
-        localStorage.setItem('gyansetu_db_users', JSON.stringify(users));
+        localStorage.setItem('gyaanseetu_db_users', JSON.stringify(users));
     };
     const findUser = (email: string) => getDBUsers().find((u: any) => u.email === email);
     const updateDBUser = (email: string, updates: any) => {
@@ -34,7 +30,7 @@ const mockBackend = async (endpoint: string, method: string, body: any, isFormDa
         const index = users.findIndex((u: any) => u.email === email);
         if (index !== -1) {
             users[index] = { ...users[index], ...updates };
-            localStorage.setItem('gyansetu_db_users', JSON.stringify(users));
+            localStorage.setItem('gyaanseetu_db_users', JSON.stringify(users));
         }
     };
 
@@ -79,7 +75,7 @@ const mockBackend = async (endpoint: string, method: string, body: any, isFormDa
 
     // 3. GET CURRENT USER (Protected)
     if (endpoint === '/auth/me') {
-        const token = localStorage.getItem('gyansetu_token');
+        const token = localStorage.getItem('gyaanseetu_token');
         if (!token || !token.startsWith('mock-token-')) {
             throw new Error("Invalid token");
         }
@@ -101,7 +97,7 @@ const mockBackend = async (endpoint: string, method: string, body: any, isFormDa
 
     // 4. UPDATE PROFILE
     if (endpoint === '/users/profile' && method === 'PUT') {
-        const token = localStorage.getItem('gyansetu_token') || "";
+        const token = localStorage.getItem('gyaanseetu_token') || "";
         const email = token.replace('mock-token-', '');
         const updateData: any = {};
         if (body.bio !== undefined) updateData.bio = body.bio;
@@ -115,7 +111,7 @@ const mockBackend = async (endpoint: string, method: string, body: any, isFormDa
 
     // 5. UPDATE CAREER GOAL
     if (endpoint === '/users/career-goal' && method === 'PUT') {
-        const token = localStorage.getItem('gyansetu_token') || "";
+        const token = localStorage.getItem('gyaanseetu_token') || "";
         const email = token.replace('mock-token-', '');
         updateDBUser(email, { career_goal: body.career_goal });
         return { message: "Goal updated" };
@@ -124,31 +120,31 @@ const mockBackend = async (endpoint: string, method: string, body: any, isFormDa
     // 6. RESOURCES
     if (endpoint === '/resources') {
         if (method === 'GET') {
-            return JSON.parse(localStorage.getItem('gyansetu_db_resources') || '[]');
+            return JSON.parse(localStorage.getItem('gyaanseetu_db_resources') || '[]');
         }
         if (method === 'POST') {
-            const resources = JSON.parse(localStorage.getItem('gyansetu_db_resources') || '[]');
+            const resources = JSON.parse(localStorage.getItem('gyaanseetu_db_resources') || '[]');
             const newRes = {
                 ...body,
                 id: Date.now(),
                 date: new Date().toLocaleDateString()
             };
             resources.unshift(newRes);
-            localStorage.setItem('gyansetu_db_resources', JSON.stringify(resources));
+            localStorage.setItem('gyaanseetu_db_resources', JSON.stringify(resources));
             return { message: "Resource created" };
         }
     }
 
     // 7. PROGRESS
     if (endpoint === '/progress' && method === 'GET') {
-        const token = localStorage.getItem('gyansetu_token') || "";
+        const token = localStorage.getItem('gyaanseetu_token') || "";
         const email = token.replace('mock-token-', '');
         const userData = findUser(email);
         return { last_watched: userData?.last_watched || null };
     }
 
     if (endpoint === '/progress/update-last-watched' && method === 'POST') {
-        const token = localStorage.getItem('gyansetu_token') || "";
+        const token = localStorage.getItem('gyaanseetu_token') || "";
         const email = token.replace('mock-token-', '');
         updateDBUser(email, { last_watched: body });
         return { message: "Progress saved" };
@@ -157,10 +153,10 @@ const mockBackend = async (endpoint: string, method: string, body: any, isFormDa
     // 8. QUIZZES
     if (endpoint === '/quizzes') {
         if (method === 'GET') {
-            return JSON.parse(localStorage.getItem('gyansetu_db_quizzes') || '[]');
+            return JSON.parse(localStorage.getItem('gyaanseetu_db_quizzes') || '[]');
         }
         if (method === 'POST') {
-            const quizzes = JSON.parse(localStorage.getItem('gyansetu_db_quizzes') || '[]');
+            const quizzes = JSON.parse(localStorage.getItem('gyaanseetu_db_quizzes') || '[]');
             const newQuiz = {
                 ...body,
                 id: Date.now(),
@@ -168,7 +164,7 @@ const mockBackend = async (endpoint: string, method: string, body: any, isFormDa
                 active: true
             };
             quizzes.unshift(newQuiz);
-            localStorage.setItem('gyansetu_db_quizzes', JSON.stringify(quizzes));
+            localStorage.setItem('gyaanseetu_db_quizzes', JSON.stringify(quizzes));
             return { message: "Quiz created" };
         }
     }
@@ -185,7 +181,7 @@ const mockBackend = async (endpoint: string, method: string, body: any, isFormDa
         return allUsers
             .filter((u: any) => u.role === 'student')
             .map((u: any) => {
-                const scoreKey = `gyansetu_mock_score_${u.email}`;
+                const scoreKey = `gyaanseetu_mock_score_${u.email}`;
                 let score = localStorage.getItem(scoreKey);
                 if (!score) {
                     score = String(Math.floor(Math.random() * 40) + 60);
@@ -207,10 +203,10 @@ const mockBackend = async (endpoint: string, method: string, body: any, isFormDa
     // 10. CHAPTER VIDEOS
     if (endpoint === '/chapter-videos') {
         if (method === 'GET') {
-            return JSON.parse(localStorage.getItem('gyansetu_db_chapter_videos') || '[]');
+            return JSON.parse(localStorage.getItem('gyaanseetu_db_chapter_videos') || '[]');
         }
         if (method === 'POST') {
-            const list = JSON.parse(localStorage.getItem('gyansetu_db_chapter_videos') || '[]');
+            const list = JSON.parse(localStorage.getItem('gyaanseetu_db_chapter_videos') || '[]');
             const idx = list.findIndex((x: any) => 
                 x.class_level === body.class_level && 
                 x.subject === body.subject && 
@@ -225,7 +221,7 @@ const mockBackend = async (endpoint: string, method: string, body: any, isFormDa
             } else {
                 list.push(entry);
             }
-            localStorage.setItem('gyansetu_db_chapter_videos', JSON.stringify(list));
+            localStorage.setItem('gyaanseetu_db_chapter_videos', JSON.stringify(list));
             return entry;
         }
     }
@@ -247,7 +243,7 @@ export const apiRequest = async (endpoint: string, method: string = 'GET', body?
         }
     }
 
-    const token = localStorage.getItem('gyansetu_token');
+    const token = localStorage.getItem('gyaanseetu_token');
 
     const headers: HeadersInit = {};
 
@@ -271,7 +267,7 @@ export const apiRequest = async (endpoint: string, method: string = 'GET', body?
 
         if (response.status === 401 && endpoint !== '/auth/refresh') {
             // Try to silently refresh the access token using the stored refresh token
-            const refreshToken = localStorage.getItem('gyansetu_refresh_token');
+            const refreshToken = localStorage.getItem('gyaanseetu_refresh_token');
             if (refreshToken) {
                 try {
                     console.log("Access token expired. Attempting silent refresh...");
@@ -282,8 +278,8 @@ export const apiRequest = async (endpoint: string, method: string = 'GET', body?
                     });
                     if (refreshRes.ok) {
                         const tokens = await refreshRes.json();
-                        localStorage.setItem('gyansetu_token', tokens.access_token);
-                        localStorage.setItem('gyansetu_refresh_token', tokens.refresh_token);
+                        localStorage.setItem('gyaanseetu_token', tokens.access_token);
+                        localStorage.setItem('gyaanseetu_refresh_token', tokens.refresh_token);
                         // Retry the original request with the new access token
                         config.headers = {
                             ...config.headers,
@@ -297,8 +293,8 @@ export const apiRequest = async (endpoint: string, method: string = 'GET', body?
                 }
             }
             // Refresh failed — clear session
-            localStorage.removeItem('gyansetu_token');
-            localStorage.removeItem('gyansetu_refresh_token');
+            localStorage.removeItem('gyaanseetu_token');
+            localStorage.removeItem('gyaanseetu_refresh_token');
             console.warn("Session expired. Please login again.");
         }
 
@@ -310,10 +306,10 @@ export const apiRequest = async (endpoint: string, method: string = 'GET', body?
         // Persist tokens if this was a login or refresh response
         const data = await response.json();
         if (data.access_token) {
-            localStorage.setItem('gyansetu_token', data.access_token);
+            localStorage.setItem('gyaanseetu_token', data.access_token);
         }
         if (data.refresh_token) {
-            localStorage.setItem('gyansetu_refresh_token', data.refresh_token);
+            localStorage.setItem('gyaanseetu_refresh_token', data.refresh_token);
         }
         return data;
     } catch (error: any) {

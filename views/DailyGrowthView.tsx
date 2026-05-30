@@ -57,7 +57,7 @@ export const DailyGrowthView: React.FC = () => {
     const criticalThinkingQuestion = "An AI autonomous vehicle must choose between hitting a pedestrian who ran a red light or swerving into a wall, potentially harming the passenger. Question: How should the AI be programmed to decide? Justify your ethical framework (Utilitarian vs Deontological).";
 
     useEffect(() => {
-        const saved = localStorage.getItem('gyansetu_daily_challenge');
+        const saved = localStorage.getItem('gyaanseetu_daily_challenge');
         if (saved) {
             const data = JSON.parse(saved);
             // Reset if it's a new day (simple check)
@@ -121,7 +121,7 @@ export const DailyGrowthView: React.FC = () => {
             setAiFeedback(finalFeedback);
             setCtStatus('graded');
 
-            localStorage.setItem('gyansetu_daily_challenge', JSON.stringify({
+            localStorage.setItem('gyaanseetu_daily_challenge', JSON.stringify({
                 date: new Date().toDateString(),
                 answer: ctAnswer,
                 score: finalScore,
@@ -163,7 +163,7 @@ export const DailyGrowthView: React.FC = () => {
     }, []);
 
     const checkLockoutStatus = () => {
-        const lockoutTimestamp = localStorage.getItem('gyansetu_guru_lockout_until');
+        const lockoutTimestamp = localStorage.getItem('gyaanseetu_guru_lockout_until');
         if (lockoutTimestamp) {
             const until = parseInt(lockoutTimestamp);
             const now = Date.now();
@@ -174,21 +174,21 @@ export const DailyGrowthView: React.FC = () => {
                 setLockoutTimeLeft(`${Math.floor(minutes / 60)}h ${minutes % 60}m`);
             } else {
                 setIsLocked(false);
-                localStorage.removeItem('gyansetu_guru_lockout_until');
-                localStorage.setItem('gyansetu_guru_abuse_count', '0');
+                localStorage.removeItem('gyaanseetu_guru_lockout_until');
+                localStorage.setItem('gyaanseetu_guru_abuse_count', '0');
             }
         }
     };
 
     const handleAbuse = () => {
-        let count = parseInt(localStorage.getItem('gyansetu_guru_abuse_count') || "0");
+        let count = parseInt(localStorage.getItem('gyaanseetu_guru_abuse_count') || "0");
         count += 1;
-        localStorage.setItem('gyansetu_guru_abuse_count', count.toString());
+        localStorage.setItem('gyaanseetu_guru_abuse_count', count.toString());
 
         if (count > 3) {
             // Lock for 1.5 hours (90 mins)
             const lockUntil = Date.now() + (1.5 * 60 * 60 * 1000);
-            localStorage.setItem('gyansetu_guru_lockout_until', lockUntil.toString());
+            localStorage.setItem('gyaanseetu_guru_lockout_until', lockUntil.toString());
             setIsLocked(true);
             setActiveScenario(null); // Force exit scenario
             setChatHistory([]);
