@@ -11,6 +11,13 @@ GyaanSeetu is a state-of-the-art educational ecosystem designed for CBSE/NCERT C
 
 ---
 
+> [!IMPORTANT]
+> **🏫 Teacher Portal Access & Verification:**
+> All Teacher accounts require a unique **6-Digit Teacher Secret Code** (`721735`) during login and registration.
+> To obtain this code, teachers must send official proof of their teacher credentials (ID, official school email, or affiliation proof) to **[k955776758@gmail.com](mailto:k955776758@gmail.com)**.
+
+---
+
 ## 🚀 Key Features
 
 *   🧠 **Personalized AI Guru Mentorship:** Adaptive, real-time guidance via Google Gemini (`gemini-3-flash-preview`), dynamic critical-thinking grading, and interactive soft-skills roleplays.

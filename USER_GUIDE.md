@@ -34,6 +34,14 @@ A safe, localized forum where students ask questions, upvote/downvote queries, s
 
 ---
 
+> [!IMPORTANT]
+> **🏫 Teacher Portal Access & Verification:**
+> To maintain the integrity and safety of the GyaanSeetu ecosystem, all Teacher logins and registrations require a **6-Digit Teacher Secret Code**:
+> *   **Secret Code:** `721735`
+> *   **Verification Request:** If you are a teacher and need credentials verified or code retrieval, please email your official proof of teacher credentials (school ID card, employment letter, or official institutional email) to **[k955776758@gmail.com](mailto:k955776758@gmail.com)**. Our support team will process your verification within 24 hours.
+
+---
+
 ## 💎 How GyaanSeetu Helps Our Users
 
 | User Persona | How GyaanSeetu Elevates Their Journey |

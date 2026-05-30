@@ -23,6 +23,7 @@ export const AuthSystem: React.FC<AuthSystemProps> = ({ onAuth, onBack }) => {
     const [email, setEmail] = useState("");
     const [institution, setInstitution] = useState("");
     const [password, setPassword] = useState("");
+    const [secretCode, setSecretCode] = useState("");
 
     // Status State
     const [error, setError] = useState<string | null>(null);
@@ -36,6 +37,10 @@ export const AuthSystem: React.FC<AuthSystemProps> = ({ onAuth, onBack }) => {
         setError(null);
         if (!email || !password || !institution) {
             setError("Please fill in all fields.");
+            return;
+        }
+        if (role === 'teacher' && secretCode !== '721735') {
+            setError(t.teacherSecretError || "Invalid teacher verification code. To obtain the code, please email proof of teacher credentials to k955776758@gmail.com.");
             return;
         }
         if (password.length < 6) {
@@ -72,6 +77,10 @@ export const AuthSystem: React.FC<AuthSystemProps> = ({ onAuth, onBack }) => {
         setError(null);
         if (!email || !password) {
             setError("Please fill in all fields.");
+            return;
+        }
+        if (role === 'teacher' && secretCode !== '721735') {
+            setError(t.teacherSecretError || "Invalid teacher verification code. To obtain the code, please email proof of teacher credentials to k955776758@gmail.com.");
             return;
         }
         setIsProcessing(true);
@@ -134,6 +143,7 @@ export const AuthSystem: React.FC<AuthSystemProps> = ({ onAuth, onBack }) => {
         setError(null);
         setPassword("");
         setInstitution("");
+        setSecretCode("");
     };
 
     const handleGoogleSignIn = async () => {
@@ -208,7 +218,7 @@ export const AuthSystem: React.FC<AuthSystemProps> = ({ onAuth, onBack }) => {
                     </p>
                 </div>
 
-                {!isLogin && !isForgotPassword && (
+                {!isForgotPassword && (
                     <div className={`flex p-1.5 rounded-xl mb-8 transition-colors ${isDark ? 'bg-black/40' : 'bg-black/5'}`}>
                         <button
                             onClick={() => setRole('student')}
@@ -283,6 +293,22 @@ export const AuthSystem: React.FC<AuthSystemProps> = ({ onAuth, onBack }) => {
                                         </button>
                                     </div>
                                 )}
+                            </div>
+                        )}
+
+                        {role === 'teacher' && !isForgotPassword && (
+                            <div className="group relative animate-fade">
+                                <input
+                                    type="password"
+                                    placeholder={t.teacherSecretPlaceholder || "Teacher Secret Code (6 digits)"}
+                                    value={secretCode}
+                                    onChange={(e) => setSecretCode(e.target.value)}
+                                    className={`w-full p-4 rounded-xl bg-transparent border-2 outline-none transition-all duration-300 
+                                        ${isDark
+                                            ? 'border-gray-800 focus:border-f-neon focus:bg-white/5 focus:shadow-[0_0_15px_rgba(0,240,255,0.1)] text-white placeholder-gray-600'
+                                            : 'border-gray-300 focus:border-h-accent focus:bg-white focus:shadow-md text-h-ink placeholder-gray-400'
+                                        } focus:scale-[1.02]`}
+                                />
                             </div>
                         )}
                     </div>
