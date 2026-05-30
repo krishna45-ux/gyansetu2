@@ -13,7 +13,7 @@ GyaanSeetu is a state-of-the-art educational ecosystem designed for CBSE/NCERT C
 
 > [!IMPORTANT]
 > **🏫 Teacher Portal Access & Verification:**
-> All Teacher accounts require a unique **6-Digit Teacher Secret Code** (`721735`) during login and registration.
+> All Teacher accounts require a unique **6-Digit Teacher Secret Code** (`000000`) during login and registration.
 > To obtain this code, teachers must send official proof of their teacher credentials (ID, official school email, or affiliation proof) to **[k955776758@gmail.com](mailto:k955776758@gmail.com)**.
 
 ---
